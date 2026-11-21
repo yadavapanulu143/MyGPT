@@ -177,14 +177,20 @@ class ByteLevelBPETokenizer:
         return [self.encode(t) for t in texts]
 
     # --------------------------------------------------------------- decode
-    def decode(self, ids: Iterable[int], skip_special_tokens: bool = True) -> str:
-        return self.decode_bytes(ids, skip_special_tokens=skip_special_tokens).decode("utf-8", errors="replace")
+    def decode(self, ids: Iterable[int], skip_special_tokens: bool = True, strict: bool = False) -> str:
+        return self.decode_bytes(ids, skip_special_tokens=skip_special_tokens, strict=strict).decode(
+            "utf-8", errors="replace"
+        )
 
-    def decode_bytes(self, ids: Iterable[int], skip_special_tokens: bool = True) -> bytes:
+    def decode_bytes(self, ids: Iterable[int], skip_special_tokens: bool = True, strict: bool = False) -> bytes:
         chunks = []
         for token_id in ids:
             if token_id < 0 or token_id >= len(self.id_to_bytes):
-                raise IndexError(f"token id {token_id} out of range (vocab={len(self.id_to_bytes)})")
+                # Ids above the trained vocabulary are placeholders until the
+                # tokenizer is trained; an untrained model samples them freely.
+                if strict:
+                    raise IndexError(f"token id {token_id} out of range (vocab={len(self.id_to_bytes)})")
+                continue
             if skip_special_tokens and token_id in self.special_ids:
                 continue
             chunks.append(self.id_to_bytes[token_id])

@@ -133,3 +133,10 @@ def test_no_pretrained_artifacts_used():
     forbidden = ["tokenizer.json", "vocab.json", "merges.txt", "tokenizer.model", "spiece.model"]
     found = [str(p) for p in repo.rglob("*") if p.name in forbidden]
     assert not found, f"pre-trained tokenizer artifacts found: {found}"
+
+
+def test_decode_unused_placeholder_ids_is_tolerant(tok):
+    """Untrained models sample ids that have no bytes yet; decoding skips them."""
+    assert tok.decode([104, 5000, 105]) == tok.decode([104, 105])
+    with pytest.raises(IndexError):
+        tok.decode([104, 5000], strict=True)

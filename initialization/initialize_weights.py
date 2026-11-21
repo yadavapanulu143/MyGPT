@@ -9,10 +9,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import torch
 from torch import nn
+
+if __package__ in (None, ""):  # allow `python3 initialization/initialize_weights.py`
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from model import ModelConfig, MyGPT
 from model.io import unique_state_dict
