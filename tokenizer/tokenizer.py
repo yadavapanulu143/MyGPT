@@ -14,12 +14,13 @@ Design
       4..259   raw byte 0x00 .. 0xFF
       260..    BPE merges produced by ``train()`` (empty at this stage)
 
-* The vocabulary is sized for ``vocab_size = 32768`` so it matches the model's
-  embedding matrix. Only the first 260 ids are populated today; ``train()``
-  fills the rest during the future tokenizer-training stage. Unfilled ids are
-  reported as ``<unused_N>`` placeholders so the GGUF export is always valid.
+* ``vocab_size = 32768`` matches the model's embedding matrix. The shipped
+  vocabulary in ``tokenizer/config.json`` is trained (4 specials + 256 bytes +
+  32508 merges); see ``tokenizer_training/`` for the pipeline that produced it.
+  A freshly constructed instance with no merges still reports ``<unused_N>``
+  placeholders so the GGUF export stays valid before training.
 * The pre-tokenizer regex mirrors the GPT-2 pattern used by llama.cpp, so a
-  tokenizer trained here can be exported to GGUF without behavioural drift.
+  tokenizer trained here exports to GGUF without behavioural drift.
 """
 
 from __future__ import annotations
@@ -89,9 +90,9 @@ class ByteLevelBPETokenizer:
 
         self.merges: list[tuple[int, int]] = []
         self.ranks: dict[tuple[int, int], int] = {}
+        self._cache: dict[str, list[int]] = {}
         for pair in merges or []:
             self._add_merge(tuple(pair))
-        self._cache: dict[str, list[int]] = {}
 
     # ------------------------------------------------------------- building
     def _init_base_vocab(self) -> None:
@@ -280,6 +281,11 @@ class ByteLevelBPETokenizer:
                 tokens.append(raw.decode("utf-8", errors="replace"))
         return tokens
 
+    def gguf_merges(self) -> list[str]:
+        """Merges as ``"left right"`` token strings, the form GGUF/llama.cpp expect."""
+        tokens = self.gguf_tokens()
+        return [f"{tokens[a]} {tokens[b]}" for a, b in self.merges]
+
     def gguf_token_types(self) -> list[int]:
         """llama.cpp token type ids: 1=NORMAL, 2=UNKNOWN, 3=CONTROL, 5=UNUSED."""
         types = []
@@ -298,7 +304,7 @@ class ByteLevelBPETokenizer:
     def to_dict(self) -> dict:
         return {
             "tokenizer_class": "ByteLevelBPETokenizer",
-            "description": "Independent byte-level BPE foundation for English. Merges are empty until the tokenizer training stage.",
+            "description": "Independent byte-level BPE for English, GPT-2 compatible.",
             "vocab_size": self.vocab_size_target,
             "current_vocab_size": len(self.id_to_bytes),
             "special_tokens": self.special_tokens,
@@ -329,13 +335,21 @@ class ByteLevelBPETokenizer:
         return cls.from_dict(json.loads((Path(directory) / filename).read_text(encoding="utf-8")))
 
 
+TOKENIZER_DIR = Path(__file__).resolve().parent
+
+
 def build_default_tokenizer(vocab_size: int = DEFAULT_VOCAB_SIZE) -> ByteLevelBPETokenizer:
-    """The tokenizer used by this project at the current stage (no merges yet)."""
+    """Untrained foundation (bytes only): used for algorithm tests and before training."""
     return ByteLevelBPETokenizer(vocab_size=vocab_size)
 
 
+def load_trained_tokenizer(directory: str | Path = TOKENIZER_DIR) -> ByteLevelBPETokenizer:
+    """The production tokenizer shipped with the repository."""
+    return ByteLevelBPETokenizer.load(directory)
+
+
 if __name__ == "__main__":  # pragma: no cover
-    tok = build_default_tokenizer()
+    tok = load_trained_tokenizer()
     sample = "Hello, world! The quick brown fox jumps over the lazy dog."
     ids = tok.encode(sample)
     print("vocab:", tok.vocab_size, "of", tok.vocab_size_target)

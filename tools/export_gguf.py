@@ -53,6 +53,22 @@ def map_tensor_name(name: str) -> str:
     raise KeyError(f"unmapped tensor {name}")
 
 
+def permute_rope_weight(weight: torch.Tensor, n_head: int) -> torch.Tensor:
+    """Convert HF half-split RoPE layout to ggml's interleaved layout.
+
+    ``rotate_half`` pairs ``x[i]`` with ``x[i + d/2]``; ggml's ``rope_norm``
+    pairs ``x[2i]`` with ``x[2i+1]``. Without this permutation llama.cpp applies
+    a different rotation and the logits drift even though the model still runs.
+    """
+    d_head = weight.shape[0] // n_head
+    return (
+        weight.reshape(n_head, 2, d_head // 2, weight.shape[1])
+        .swapaxes(1, 2)
+        .reshape(weight.shape)
+        .contiguous()
+    )
+
+
 def load_state(directory: Path, filename: str | None) -> dict[str, torch.Tensor]:
     path = resolve_checkpoint(directory, filename)
     if path.suffix == ".safetensors":
@@ -100,10 +116,7 @@ def export_gguf(
     writer.add_string("tokenizer.ggml.pre", "gpt-2")
     writer.add_string_array("tokenizer.ggml.tokens", tokenizer.gguf_tokens())
     writer.add_int32_array("tokenizer.ggml.token_type", tokenizer.gguf_token_types())
-    writer.add_string_array(
-        "tokenizer.ggml.merges",
-        [f"{a} {b}" for a, b in tokenizer.merges],
-    )
+    writer.add_string_array("tokenizer.ggml.merges", tokenizer.gguf_merges())
     writer.add_uint32("tokenizer.ggml.bos_token_id", config.bos_token_id)
     writer.add_uint32("tokenizer.ggml.eos_token_id", config.eos_token_id)
     writer.add_uint32("tokenizer.ggml.unknown_token_id", config.unk_token_id)
@@ -115,6 +128,10 @@ def export_gguf(
     for name, tensor in state.items():
         gguf_name = map_tensor_name(name)
         exported.append(gguf_name)
+        if name.endswith("attn.q_proj.weight"):
+            tensor = permute_rope_weight(tensor, config.num_attention_heads)
+        elif name.endswith("attn.k_proj.weight"):
+            tensor = permute_rope_weight(tensor, config.num_key_value_heads)
         # 1-D norm scales stay in F32: ggml's RMSNorm multiplies them into F32
         # activations and rejects mixed f16/f32 element-wise ops.
         tensor_dtype = "f32" if tensor.dim() == 1 else dtype

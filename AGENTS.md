@@ -9,8 +9,9 @@ session does not have to rediscover it.
 parameters, written from scratch in PyTorch, randomly initialized, verified
 structurally, exported to GGUF, quantized to Q4_K_M, and benchmarked. Deployment
 target: Windows 11 laptop, AMD Ryzen 3 3250U (2C/4T, AVX2, Vega 3), 8 GB RAM
-(~5.94 GB usable), CPU-only, offline. Stage 1 (this work) deliberately stops
-before any training.
+(~5.94 GB usable), CPU-only, offline. Stage 1 built the architecture and export
+path; Stage 2 trained the 32,768-entry tokenizer. No language-model training has
+happened.
 
 ## Hard constraints (do not violate)
 
@@ -18,8 +19,8 @@ before any training.
 2. Do not start pretraining, instruction tuning or RL without explicit approval.
 3. The model must remain loadable by stock llama.cpp (GGUF `llama` architecture).
 4. Do not claim the model is intelligent, helpful or uncensored: it is untrained.
-5. Never invent laptop benchmark numbers. Dev-machine numbers are measured;
-   laptop numbers must be labelled estimates with the derivation shown.
+5. Never invent benchmark numbers. Dev-machine and laptop numbers in the docs
+   are measured; anything estimated is labelled as such.
 6. No keyword-based censorship anywhere. Behaviour is a configurable prompt
    policy (`config/behaviour_policy.json`), not a filter.
 7. Keep the fp32 checkpoint as the source of truth for all quantized artifacts.
@@ -31,7 +32,7 @@ before any training.
 | Layers / d_model | 41 / 1024 | 500M budget with short sequential chain for CPU |
 | Heads / KV heads | 16 / 4 | GQA cuts KV cache 4x (328 -> 82 MiB at 2048) |
 | FFN | 2816 (multiple of 256) | SwiGLU at 2.75x; 256 keeps k-quants fast/possible |
-| Vocab | 32768, tied | 6.8% of params; tying removes a second 33.5M matrix |
+| Vocab | 32768, tied, trained BPE | 6.8% of params; tying removes a second 33.5M matrix |
 | Context | 2048 | 82 MiB KV at fp16; enough for a conversation turn |
 | Positions | RoPE base 10000 | no extra params, GGUF-native |
 | Norm / act | RMSNorm / SwiGLU | llama.cpp-native, no biases |
@@ -46,25 +47,33 @@ on purpose.
 | Path | Role |
 |---|---|
 | `model/` | `MyGPT`, `Attention` (GQA+RoPE), `TransformerBlock`, `RMSNorm`, `SwiGLUMLP`, `io.py`, `policy.py` |
-| `tokenizer/tokenizer.py` | `ByteLevelBPETokenizer`: ids 0-3 specials, 4-259 bytes, 260+ merges (empty now) |
+| `tokenizer/tokenizer.py` | `ByteLevelBPETokenizer`: ids 0-3 specials, 4-259 bytes, 260+ merges (32,508 trained) |
+| `tokenizer/` artifacts | `config.json` (canonical), `vocab.json`, `merges.txt`, `special_tokens_map.json`, `tokenizer_manifest.json` (hashes) |
+| `tokenizer_training/` | `prepare_corpus.py`, `train_tokenizer.py`, `evaluate_tokenizer.py`, `manifests/` |
 | `initialization/initialize_weights.py` | seeded init, stats, fingerprint, `init_manifest.json` |
 | `tools/gguf_writer.py` | GGUF v3 writer, hand-rolled, no `gguf` package |
 | `tools/export_gguf.py` | checkpoint -> GGUF; 1-D tensors stay F32 |
 | `tools/llama_parity.cpp` | llama.cpp harness printing prompt/greedy token ids |
 | `scripts/` | count_parameters, benchmark_memory, test_inference, quantize_reference, verify_gguf_parity, chat |
-| `docs/` | architecture, memory_analysis, training_plan, final_report |
+| `docs/` | architecture, memory_analysis, training_plan, tokenizer, tokenizer_report, final_report |
 | `deployment/` | laptop quick start and plan |
 
 ## Commands that matter
 
 ```bash
-python3 -m pytest tests -q                       # 67 tests, ~28 s
+python3 -m pytest tests -q                       # 97 passed, 1 skipped, ~29 s
 python3 scripts/count_parameters.py              # 495,799,296 everywhere
 python3 initialization/initialize_weights.py --out checkpoints/mygpt-0.5b-init
 python3 tools/export_gguf.py --checkpoint checkpoints/mygpt-0.5b-init --output dist/mygpt-0.5b-f16.gguf
 llama-quantize dist/mygpt-0.5b-f16.gguf dist/mygpt-0.5b-q4_k_m.gguf Q4_K_M
 python3 scripts/verify_gguf_parity.py --gguf dist/mygpt-0.5b-f16.gguf
 python3 scripts/benchmark_memory.py --contexts 64,256 --dtypes float32,bfloat16
+
+# tokenizer stage (needs requirements-tokenizer.txt and a corpus)
+python3 tokenizer_training/prepare_corpus.py --out-dir /workspace/corpus/processed
+python3 tokenizer_training/train_tokenizer.py --corpus /workspace/corpus/processed/train --out tokenizer
+python3 tokenizer_training/evaluate_tokenizer.py --tokenizer tokenizer \
+    --eval-text /workspace/corpus/processed/eval/heldout.txt --json-out /tmp/eval.json
 ```
 
 llama.cpp build used for verification: `cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -78,8 +87,15 @@ llama.cpp build used for verification: `cmake -B build -DCMAKE_BUILD_TYPE=Releas
   exported as F32** while matrices are F16.
 - `intermediate_size` must be a multiple of 256 or Q4_K quantization fails.
 - llama.cpp expects GGUF token strings in GPT-2 "byte-unicode" form; the
-  tokenizer exposes `gguf_tokens()` for exactly that. Empty `merges` array must
-  still be present or loading throws "cannot find tokenizer merges".
+  tokenizer exposes `gguf_tokens()`. Merges must be written as `"left right"`
+  token strings (`gguf_merges()`), never as id pairs.
+- **RoPE layout**: this model uses HF `rotate_half`; ggml uses interleaved
+  `rope_norm`. `tools/export_gguf.py` must permute `attn_q`/`attn_k` weights
+  (`permute_rope_weight`) or the GGUF still runs but its logits only correlate
+  with PyTorch at cosine 0.982. With the permutation: 0.999999 and identical
+  greedy output.
+- Token ids are numbered in merge order from 260; HF `tokenizers` numbers its 256
+  base tokens by codepoint, so compare HF parity on token *strings*, not ids.
 - Random-init models generate degenerate repeated tokens; that is expected, not a
   bug. Use the parity harness (token ids), not text, to verify correctness.
 - PyTorch is 4-5x slower than llama.cpp on CPU; do not benchmark the laptop path
@@ -87,17 +103,26 @@ llama.cpp build used for verification: `cmake -B build -DCMAKE_BUILD_TYPE=Releas
 
 ## Status (2026-11-21)
 
-Done: architecture, tokenizer foundation, init + manifest, 67 tests, GGUF export,
-5 quantizations, parity check, dev-machine benchmarks, memory profiling,
-reference INT8/INT4 study, all docs, deployment plan.
+Stage 1 done: architecture, init + manifest, GGUF export, 5 quantizations,
+parity harness, dev-machine benchmarks, memory profiling, INT8/INT4 study,
+deployment plan.
 
-Not done (needs approval): tokenizer training, pretraining, instruction tuning,
-behaviour tuning, laptop benchmarking, long-context extension.
+Stage 2 done: 849 MiB five-source corpus (with licences recorded), corpus-size
+pilot, trained 32,768-entry BPE (4.650 bytes/token held-out), full artifact set
+with hashes, evaluation report, HF and llama.cpp parity, 97 tests. Fixed two
+export bugs found on the way: merges written as ids, and missing RoPE
+permutation. Laptop generation measured by the owner: 25.26-26.93 tokens/s
+(Q4_K_M, `llama-bench`).
+
+Not done (needs approval): pretraining, instruction tuning, behaviour tuning,
+long-context extension, multilingual tokenizer, chat template in GGUF.
 
 ## Next steps, in order
 
 1. Approve training scope (corpus, GPU budget, evaluation thresholds).
-2. Train the tokenizer on 10-30 GB English text; re-export GGUF; re-verify parity.
+2. Decide chat-token strategy: the 32,768 ids are full, so either reserve ids now
+   by retraining with a smaller merge count, or reuse `<bos>/<eos>` plus text
+   role markers.
 3. Pretrain 10-20B tokens on rented GPUs; monitor validation loss.
 4. Instruction-tune, then behaviour-tune (DPO/ORPO against over-refusal).
 5. Evaluate: perplexity, lm-eval-harness, XSTest over-refusal, safety floor.
@@ -107,13 +132,13 @@ behaviour tuning, laptop benchmarking, long-context extension.
 
 Everything except generated artifacts (all of these are tracked):
 
-- `model/`, `tokenizer/`, `config/`, `initialization/`, `tests/`, `scripts/`,
+- `model/`, `tokenizer/` (including the 1.7 MiB vocab/merge artifacts),
+  `tokenizer_training/`, `config/`, `initialization/`, `tests/`, `scripts/`,
   `tools/`, `docs/`, `deployment/`, `README.md`, `AGENTS.md`,
-  `requirements.txt`, `pyproject.toml`, `.gitignore`
+  `requirements.txt`, `requirements-tokenizer.txt`, `pyproject.toml`,
+  `.gitignore`
 
-Git-ignored and regenerable: `checkpoints/`, `dist/`, `__pycache__/`,
-`.pytest_cache/`. The Q4_K_M artifact is published as a release asset:
-`v0.1.0-stage1` -> `mygpt-0.5b-q4_k_m.gguf` (sha256
-`02f1da92760a8feee593ab25cad922c67609a0fe1c468765e992ba8106bbc265`, 305,722,816
-bytes). Re-upload with `gh release upload v0.1.0-stage1 dist/mygpt-0.5b-q4_k_m.gguf
---clobber` after rebuilding; never commit the file to git.
+Git-ignored and regenerable: `checkpoints/`, `dist/`, `/workspace/corpus/`,
+`__pycache__/`, `.pytest_cache/`. The Q4_K_M artifact is published as a release
+asset on `v0.2.0-stage2` (rebuild after the RoPE fix and update the sha256 in
+`deployment/README.md`); never commit GGUF files to git.

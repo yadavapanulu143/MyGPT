@@ -8,7 +8,7 @@ GPU driver, no internet connection, no account.
 
 | Item | Where it comes from |
 |---|---|
-| `mygpt-0.5b-q4_k_m.gguf` (292 MiB) | release asset: https://github.com/yadavapanulu143/MyGPT/releases/download/v0.1.0-stage1/mygpt-0.5b-q4_k_m.gguf (sha256 `02f1da92760a8feee593ab25cad922c67609a0fe1c468765e992ba8106bbc265`) |
+| `mygpt-0.5b-q4_k_m.gguf` (292 MiB) | release asset: https://github.com/yadavapanulu143/MyGPT/releases/download/v0.2.0-stage2/mygpt-0.5b-q4_k_m.gguf (sha256 `3ac8777b1000c52689fcb656f92f9d67fa9076caca651477b92e256c84003ca5`, 306,040,448 bytes) |
 | llama.cpp Windows build | https://github.com/ggml-org/llama.cpp/releases/latest - download the asset named `llama-bNNNNN-bin-win-cpu-x64.zip` (~24 MiB). The x64 CPU build dispatches AVX2 at runtime, which is what this CPU needs. Do **not** pick cuda/rocm/sycl/vulkan builds. |
 | ~1 GB free disk | model + binary |
 

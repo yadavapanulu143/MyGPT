@@ -1,0 +1,62 @@
+{
+  "mygpt-0.5b-f16.gguf": [
+    {
+      "prompt": "Hello world, this is a test of the model",
+      "cosine": 0.99999881,
+      "max_abs_diff": 0.004523,
+      "top1_agree": true
+    },
+    {
+      "prompt": "def train_step(model, batch):\n    loss =",
+      "cosine": 0.99999933,
+      "max_abs_diff": 0.003042,
+      "top1_agree": true
+    },
+    {
+      "prompt": "The history of computing begins with mec",
+      "cosine": 0.99999935,
+      "max_abs_diff": 0.00316,
+      "top1_agree": true
+    }
+  ],
+  "mygpt-0.5b-q8_0.gguf": [
+    {
+      "prompt": "Hello world, this is a test of the model",
+      "cosine": 0.99933094,
+      "max_abs_diff": 0.089565,
+      "top1_agree": true
+    },
+    {
+      "prompt": "def train_step(model, batch):\n    loss =",
+      "cosine": 0.99926925,
+      "max_abs_diff": 0.105616,
+      "top1_agree": true
+    },
+    {
+      "prompt": "The history of computing begins with mec",
+      "cosine": 0.99941843,
+      "max_abs_diff": 0.09048,
+      "top1_agree": true
+    }
+  ],
+  "mygpt-0.5b-q4_k_m.gguf": [
+    {
+      "prompt": "Hello world, this is a test of the model",
+      "cosine": 0.95219173,
+      "max_abs_diff": 0.790988,
+      "top1_agree": false
+    },
+    {
+      "prompt": "def train_step(model, batch):\n    loss =",
+      "cosine": 0.96108875,
+      "max_abs_diff": 0.771639,
+      "top1_agree": false
+    },
+    {
+      "prompt": "The history of computing begins with mec",
+      "cosine": 0.95707085,
+      "max_abs_diff": 0.752119,
+      "top1_agree": false
+    }
+  ]
+}

@@ -5,10 +5,11 @@ randomly initialized in this repository. No pre-trained weights, no downloaded
 tokenizer, no fine-tuning of an existing model. Designed for CPU-only, offline
 inference on a Ryzen 3 3250U laptop with 8 GB RAM.
 
-> **Status: stage 1 of 2.** The architecture, tokenizer foundation, verification
-> suite and quantized GGUF deployment path are complete and tested. The weights
-> are random, so the model produces noise - it is not yet a conversational
-> assistant. Training is a separate, explicitly approved stage
+> **Status: stage 2 complete (tokenizer), training not started.** The
+> architecture, the trained 32,768-entry tokenizer, the verification suite and
+> the quantized GGUF deployment path are complete and tested. The weights are
+> random, so the model produces noise - it is not yet a conversational
+> assistant. Pretraining is a separate, explicitly approved stage
 > (`docs/training_plan.md`).
 
 ## What is proven here
@@ -16,11 +17,12 @@ inference on a Ryzen 3 3250U laptop with 8 GB RAM.
 | Item | Result |
 |---|---|
 | Parameter count | 495,799,296 analytic = instantiated = on disk |
-| Tests | 67 passing (`pytest tests -q`) |
+| Tests | 97 passing, 1 skipped (`pytest tests -q`) |
+| Tokenizer | trained 32,768-entry byte-level BPE, 4.65 bytes/token on held-out English |
 | Random init | verified (mean ~0, std 0.0200, seed-reproducible, no pre-trained data) |
 | Causal masking | verified (future tokens cannot change past logits) |
 | KV cache | verified equivalent to a full forward pass |
-| GGUF export | loads in llama.cpp, tokenizer and greedy decode match PyTorch exactly |
+| GGUF export | loads in llama.cpp, token ids match for every prompt, F16 greedy decode is token-for-token identical (logit cosine 0.999999) |
 | Quantization | F16 / Q8_0 / Q5_K_M / Q4_K_M / Q4_0 produced and benchmarked |
 | Laptop footprint | Q4_K_M: 292 MiB file, ~400-550 MiB RAM, no GPU, no network |
 
@@ -32,7 +34,7 @@ pip install -r requirements.txt
 # 1. architecture + exact parameter count
 python3 scripts/count_parameters.py
 
-# 2. run the verification suite (67 tests)
+# 2. run the verification suite (97 tests, 1 skipped without llama.cpp)
 python3 -m pytest tests -q
 
 # 3. create the randomly initialized checkpoint (1.85 GiB, fp32)
@@ -49,6 +51,10 @@ python3 scripts/quantize_reference.py
 python3 scripts/verify_gguf_parity.py --gguf dist/mygpt-0.5b-f16.gguf
 ```
 
+Retraining the tokenizer needs the extra training dependencies
+(`pip install -r requirements-tokenizer.txt`) and a corpus; see
+`docs/tokenizer.md` for the four commands and the corpus provenance.
+
 ## Model at a glance
 
 | | |
@@ -57,7 +63,7 @@ python3 scripts/verify_gguf_parity.py --gguf dist/mygpt-0.5b-f16.gguf
 | Layers / d_model | 41 / 1024 |
 | Heads / KV heads | 16 / 4 (GQA, head_dim 64) |
 | FFN | 2816, SwiGLU |
-| Vocab / context | 32768 (tied embeddings) / 2048 |
+| Vocab / context | 32768 (tied embeddings, trained BPE) / 2048 |
 | Positions / norm | RoPE (base 10000) / RMSNorm |
 | Dtypes | fp32 source, fp16 GGUF, Q8_0, Q5_K_M, Q4_K_M, Q4_0 |
 
@@ -69,9 +75,22 @@ python3 scripts/verify_gguf_parity.py --gguf dist/mygpt-0.5b-f16.gguf
 | Q8_0 | 503 MiB | 37.5-49.7 t/s | 168-187 t/s |
 | Q4_K_M | 292 MiB | 65.8-67.1 t/s | 266-282 t/s |
 
-Laptop estimate for Q4_K_M: **8-15 tokens/s**, ~400-550 MiB RAM, ~1 s to first
-token. These are estimates derived from the measurements above, not laptop
-benchmarks - see `docs/memory_analysis.md`.
+### Measured on the target laptop (AMD Ryzen 3 3250U, 2 threads, Q4_K_M)
+
+`llama-bench` on the actual machine, not an estimate:
+
+| Benchmark | Measured |
+|---|---:|
+| Prompt processing, 64 tokens | 40.37 tokens/s |
+| Prompt processing, 256 tokens | 52.85 tokens/s |
+| Generation, 32 tokens | 26.93 tokens/s |
+| Generation, 128 tokens | 25.26 tokens/s |
+
+So the laptop generates ~25 tokens/s, faster than the 8-15 tokens/s estimate in
+`docs/memory_analysis.md` (the estimate assumed a smaller effective AVX2 penalty
+and 2 cores at 2.6 GHz). Generation is the number that matters for chat; prompt
+processing at 40-53 tokens/s means a 500-token prompt costs ~10 s before the
+first token.
 
 ## Documentation
 
@@ -80,6 +99,8 @@ benchmarks - see `docs/memory_analysis.md`.
 | `docs/final_report.md` | full handover: specs, counts, sizes, benchmarks, tests, limitations |
 | `docs/architecture.md` | design decisions and the parameter math |
 | `docs/memory_analysis.md` | storage formats, runtime memory, measured vs estimated speed |
+| `docs/tokenizer.md` | tokenizer design, corpus, licences, training, reproduction |
+| `docs/tokenizer_report.md` | tokenizer evaluation: compression, probes, HF/llama.cpp parity |
 | `docs/training_plan.md` | data, compute, cost and evaluation plan for the training stage |
 | `deployment/README.md` | Windows 11 quick start |
 | `deployment/deployment_plan.md` | runtime choice, artifact pipeline, transfer, offline checks |
@@ -100,7 +121,8 @@ actually behaves.
 
 ```
 model/          architecture, attention, blocks, embeddings, I/O, policy
-tokenizer/      independent byte-level BPE (encode/decode/train/GGUF view)
+tokenizer/      trained 32,768-entry byte-level BPE + vocab/merges artifacts
+tokenizer_training/  corpus preparation, BPE training, evaluation, manifests
 config/         model_config.json, behaviour_policy.json
 initialization/ seeded random init + verification manifest
 tests/          architecture, parameters, forward pass, save/load, tokenizer, policy

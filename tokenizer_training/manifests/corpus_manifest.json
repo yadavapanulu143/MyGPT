@@ -1,0 +1,201 @@
+{
+  "purpose": "tokenizer training corpus (not language-model pretraining data)",
+  "generated_by": "tokenizer_training/prepare_corpus.py",
+  "normalization": "unicode NFC; CRLF->LF; C0 controls removed; trailing spaces stripped; 3+ newlines -> 2",
+  "deduplication": "exact sha256 of normalised document text",
+  "filters": {
+    "min_document_chars": 100,
+    "max_non_ascii_ratio": 0.05
+  },
+  "split": {
+    "eval_every_n_documents": 100
+  },
+  "parquet_chunk_chars": 2000,
+  "limit_train_mb": null,
+  "limit_source_mb": null,
+  "sources": [
+    {
+      "name": "wikitext-103-raw",
+      "license": "CC BY-SA 3.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "urls": [
+        "https://huggingface.co/datasets/Salesforce/wikitext/resolve/main/wikitext-103-raw-v1/train-00000-of-00002.parquet",
+        "https://huggingface.co/datasets/Salesforce/wikitext/resolve/main/wikitext-103-raw-v1/train-00001-of-00002.parquet"
+      ],
+      "path_glob": null
+    },
+    {
+      "name": "project-gutenberg",
+      "license": "Public domain (Project Gutenberg)",
+      "license_url": "https://www.gutenberg.org/policy/license.html",
+      "urls": [
+        "https://huggingface.co/datasets/manu/project_gutenberg/resolve/main/data/en-00000-of-00052-7cda8f63c262acf8.parquet"
+      ],
+      "path_glob": null
+    },
+    {
+      "name": "oasst1",
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0",
+      "urls": [
+        "https://huggingface.co/datasets/OpenAssistant/oasst1/resolve/main/data/train-00000-of-00001-b42a775f407cee45.parquet"
+      ],
+      "path_glob": null
+    },
+    {
+      "name": "python-stdlib",
+      "license": "PSF-2.0",
+      "license_url": "https://docs.python.org/3/license.html",
+      "urls": [],
+      "path_glob": "/usr/local/lib/python3.*/**/*.py"
+    },
+    {
+      "name": "ietf-rfc",
+      "license": "IETF Trust Legal Provisions (free to reproduce)",
+      "license_url": "https://trustee.ietf.org/license-info/",
+      "urls": [
+        "https://www.rfc-editor.org/rfc/rfc791.txt",
+        "https://www.rfc-editor.org/rfc/rfc793.txt",
+        "https://www.rfc-editor.org/rfc/rfc821.txt",
+        "https://www.rfc-editor.org/rfc/rfc822.txt",
+        "https://www.rfc-editor.org/rfc/rfc959.txt",
+        "https://www.rfc-editor.org/rfc/rfc1034.txt",
+        "https://www.rfc-editor.org/rfc/rfc1035.txt",
+        "https://www.rfc-editor.org/rfc/rfc1122.txt",
+        "https://www.rfc-editor.org/rfc/rfc1123.txt",
+        "https://www.rfc-editor.org/rfc/rfc1738.txt",
+        "https://www.rfc-editor.org/rfc/rfc1939.txt",
+        "https://www.rfc-editor.org/rfc/rfc2045.txt",
+        "https://www.rfc-editor.org/rfc/rfc2046.txt",
+        "https://www.rfc-editor.org/rfc/rfc2131.txt",
+        "https://www.rfc-editor.org/rfc/rfc2324.txt",
+        "https://www.rfc-editor.org/rfc/rfc2616.txt",
+        "https://www.rfc-editor.org/rfc/rfc2821.txt",
+        "https://www.rfc-editor.org/rfc/rfc2822.txt",
+        "https://www.rfc-editor.org/rfc/rfc3339.txt",
+        "https://www.rfc-editor.org/rfc/rfc3986.txt",
+        "https://www.rfc-editor.org/rfc/rfc3987.txt",
+        "https://www.rfc-editor.org/rfc/rfc4180.txt",
+        "https://www.rfc-editor.org/rfc/rfc5234.txt",
+        "https://www.rfc-editor.org/rfc/rfc5321.txt",
+        "https://www.rfc-editor.org/rfc/rfc5322.txt",
+        "https://www.rfc-editor.org/rfc/rfc5890.txt",
+        "https://www.rfc-editor.org/rfc/rfc6265.txt",
+        "https://www.rfc-editor.org/rfc/rfc6455.txt",
+        "https://www.rfc-editor.org/rfc/rfc7230.txt",
+        "https://www.rfc-editor.org/rfc/rfc7231.txt",
+        "https://www.rfc-editor.org/rfc/rfc7232.txt",
+        "https://www.rfc-editor.org/rfc/rfc7233.txt",
+        "https://www.rfc-editor.org/rfc/rfc7234.txt",
+        "https://www.rfc-editor.org/rfc/rfc7235.txt",
+        "https://www.rfc-editor.org/rfc/rfc7519.txt",
+        "https://www.rfc-editor.org/rfc/rfc7540.txt",
+        "https://www.rfc-editor.org/rfc/rfc7541.txt",
+        "https://www.rfc-editor.org/rfc/rfc8259.txt",
+        "https://www.rfc-editor.org/rfc/rfc8446.txt",
+        "https://www.rfc-editor.org/rfc/rfc9110.txt",
+        "https://www.rfc-editor.org/rfc/rfc9111.txt",
+        "https://www.rfc-editor.org/rfc/rfc9112.txt",
+        "https://www.rfc-editor.org/rfc/rfc9113.txt",
+        "https://www.rfc-editor.org/rfc/rfc9114.txt"
+      ],
+      "path_glob": null
+    }
+  ],
+  "statistics": {
+    "per_source": {
+      "wikitext-103-raw": {
+        "documents": 220944,
+        "kept": 219339,
+        "bytes": 535127283,
+        "duplicates": 1541,
+        "filtered": 64
+      },
+      "project-gutenberg": {
+        "documents": 1180,
+        "kept": 743,
+        "bytes": 322886441,
+        "duplicates": 437,
+        "filtered": 0
+      },
+      "oasst1": {
+        "documents": 7812,
+        "kept": 7773,
+        "bytes": 20978605,
+        "duplicates": 0,
+        "filtered": 39
+      },
+      "python-stdlib": {
+        "documents": 1038,
+        "kept": 1006,
+        "bytes": 15578985,
+        "duplicates": 1,
+        "filtered": 31
+      },
+      "ietf-rfc": {
+        "documents": 44,
+        "kept": 44,
+        "bytes": 5957749,
+        "duplicates": 0,
+        "filtered": 0
+      }
+    },
+    "train_bytes": 890477210,
+    "train_documents": 226616,
+    "eval_bytes": 10051853,
+    "eval_documents": 2289,
+    "duplicates_dropped": 1979,
+    "filtered_dropped": 134
+  },
+  "train_shards": [
+    {
+      "file": "train-0000.txt",
+      "sha256": "7a5e7570aa85abd08d807d1933ac4b6a3abbaeaf802e619e8569e38b5054e2cf",
+      "bytes": 104858670
+    },
+    {
+      "file": "train-0001.txt",
+      "sha256": "4074307f3abe5ad77d4ca96aa2462f405feb3bedb5e17e19f7082a553b2aaf7d",
+      "bytes": 104859110
+    },
+    {
+      "file": "train-0002.txt",
+      "sha256": "44a2c22a691a578848602d694bd5fceb5fffbd68e2c26ad258db47c79a9c78f7",
+      "bytes": 104860129
+    },
+    {
+      "file": "train-0003.txt",
+      "sha256": "eeda1f48fb7c866ff2f158bcb1784eb2275db18ba7e347d78650b78a94ddc623",
+      "bytes": 104859946
+    },
+    {
+      "file": "train-0004.txt",
+      "sha256": "74611625afdf7dae5356325e9702a67041dfe75cc90f0ee5e16bca39d340ea1b",
+      "bytes": 104859470
+    },
+    {
+      "file": "train-0005.txt",
+      "sha256": "2792bcf30bb067a4b27a190494a3c131ec039502eb0c79a4ee90b2e91d637c4d",
+      "bytes": 105333018
+    },
+    {
+      "file": "train-0006.txt",
+      "sha256": "1b6ed3dffea02704137fac7f3bf1a422a2aa44ef3d69a871324dcdec08ad9441",
+      "bytes": 105212784
+    },
+    {
+      "file": "train-0007.txt",
+      "sha256": "16a2d3422a2fb7656116904f207c15fe3f673e39f9b04d8cba5af464806fc52d",
+      "bytes": 104882004
+    },
+    {
+      "file": "train-0008.txt",
+      "sha256": "4ece42772774d1e96550cbce1ee0d5b089a3611e0d12019ba31dd5bb2029f2d9",
+      "bytes": 50752079
+    }
+  ],
+  "eval_file": {
+    "file": "eval/heldout.txt",
+    "bytes": 10051853
+  }
+}

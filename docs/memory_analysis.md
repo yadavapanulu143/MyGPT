@@ -4,10 +4,11 @@ Two different machines appear in this document and they are never mixed:
 
 - **Dev machine (measured)**: AMD EPYC 9B14, 4 vCPU (Zen 5, AVX-512), ~15 GiB RAM,
   Debian 13, no GPU. Every number marked *measured* comes from here.
-- **Target laptop (estimated)**: AMD Ryzen 3 3250U, 2 cores / 4 threads (Zen+,
-  AVX2, no AVX-512), 8 GB RAM with ~5.94 GB usable, Vega 3 integrated graphics,
-  SSD, Windows 11. No benchmark here was run on that laptop, so every laptop
-  number is an estimate with its derivation shown.
+- **Target laptop (measured, section 4a)**: AMD Ryzen 3 3250U, 2 cores / 4
+  threads (Zen+, AVX2, no AVX-512), 8 GB RAM with ~5.94 GB usable, Vega 3
+  integrated graphics, SSD, Windows 11. The owner ran `llama-bench` on it with
+  the Q4_K_M file; those numbers are reported verbatim in section 4a. Everything
+  else labelled "estimate" remains an estimate.
 
 ## 1. Model storage by format
 
@@ -119,6 +120,36 @@ Treat these as engineering estimates, not promises. The dev machine is 4-6x
 faster per token than the laptop is expected to be; the honest way to know is to
 run `llama-bench` on the laptop, which takes under a minute (see
 `deployment/deployment_plan.md`).
+
+## 4a. Measured on the target laptop
+
+Hardware: AMD Ryzen 3 3250U (2 cores / 4 threads, AVX2), 8 GB RAM (5.94 GB
+usable), Windows 11 x64, llama.cpp CPU build, `-t 2`, model
+`mygpt-0.5b-q4_k_m.gguf`.
+
+| Benchmark | Measured |
+|---|---:|
+| Prompt processing, 64 tokens | 40.37 tokens/s |
+| Prompt processing, 256 tokens | 52.85 tokens/s |
+| Generation, 32 tokens | 26.93 tokens/s |
+| Generation, 128 tokens | 25.26 tokens/s |
+
+**Baseline: ~25 generated tokens/s** on Q4_K_M. Prompt processing is 40-53 t/s,
+which is a different quantity and must not be quoted as generation speed.
+
+Comparison with the estimate above: generation came out 1.7-3x faster than the
+8-15 t/s range. The estimate over-weighted the AVX2-vs-AVX-512 penalty and
+under-weighted how well a 292 MiB model fits in the laptop's L3 cache and
+memory bandwidth at 2 threads. Practical consequences:
+
+- a 200-token answer takes ~8 s to generate;
+- a 500-token prompt costs ~10 s of prompt processing before the first token;
+- 2048-token context generation is slightly slower than 128 (25.26 vs 26.93 t/s),
+  i.e. KV-cache traffic is a minor factor at this size.
+
+These numbers were measured on the untrained (random-weight) model. Speed does
+not depend on weight values, so they carry over to a trained model of the same
+architecture.
 
 ## 5. Will it fit on the laptop?
 

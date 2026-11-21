@@ -1,0 +1,65 @@
+{
+  "gguf": "dist/mygpt-0.5b-f16.gguf",
+  "tokenizer": {
+    "plain": {
+      "tokens": 11,
+      "llama_tokens": 11,
+      "match": true
+    },
+    "contractions": {
+      "tokens": 20,
+      "llama_tokens": 20,
+      "match": true
+    },
+    "numbers_url": {
+      "tokens": 42,
+      "llama_tokens": 42,
+      "match": true
+    },
+    "code": {
+      "tokens": 26,
+      "llama_tokens": 26,
+      "match": true
+    },
+    "unicode": {
+      "tokens": 32,
+      "llama_tokens": 32,
+      "match": true
+    },
+    "abbreviations": {
+      "tokens": 33,
+      "llama_tokens": 33,
+      "match": true
+    },
+    "long": {
+      "tokens": 600,
+      "llama_tokens": 600,
+      "match": true
+    }
+  },
+  "status": "ok",
+  "greedy": {
+    "prompt": "Hello world, this is a test of the model.",
+    "pytorch_ids": [
+      4366,
+      670,
+      670,
+      670,
+      670,
+      670,
+      670,
+      670
+    ],
+    "llama_ids": [
+      4366,
+      670,
+      670,
+      670,
+      670,
+      670,
+      670,
+      670
+    ],
+    "match": true
+  }
+}

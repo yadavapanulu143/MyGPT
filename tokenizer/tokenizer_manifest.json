@@ -1,0 +1,53 @@
+{
+  "label": "full-849MiB",
+  "vocab_size": 32768,
+  "num_merges": 32508,
+  "special_tokens": {
+    "<pad>": 0,
+    "<bos>": 1,
+    "<eos>": 2,
+    "<unk>": 3
+  },
+  "corpus": {
+    "shards": [
+      "train-0000.txt",
+      "train-0001.txt",
+      "train-0002.txt",
+      "train-0003.txt",
+      "train-0004.txt",
+      "train-0005.txt",
+      "train-0006.txt",
+      "train-0007.txt",
+      "train-0008.txt"
+    ],
+    "bytes": 890477210,
+    "manifest_sha256": "4286b0baf0011ac580dffb2044454f34296023b185e871e66fa06030e3576d03"
+  },
+  "training": {
+    "algorithm": "byte-level BPE (GPT-2 style, add_prefix_space=False, use_regex=True)",
+    "trainer": "tokenizers 0.23.3 (BpeTrainer, training only)",
+    "vocab_size": 32768,
+    "num_merges": 32508,
+    "min_frequency": 2,
+    "corpus_shards": [
+      "train-0000.txt",
+      "train-0001.txt",
+      "train-0002.txt",
+      "train-0003.txt",
+      "train-0004.txt",
+      "train-0005.txt",
+      "train-0006.txt",
+      "train-0007.txt",
+      "train-0008.txt"
+    ],
+    "corpus_bytes": 890477210,
+    "corpus_manifest_sha256": "4286b0baf0011ac580dffb2044454f34296023b185e871e66fa06030e3576d03",
+    "train_seconds": 112.9
+  },
+  "artifacts": {
+    "config.json": "3e464c089b114ff9b038f8b8bc1092cda348b03eaf0e3935b90aa06a69cfd527",
+    "vocab.json": "0334e947579190aa04b1f6cb2ebecc41629e45ff067d883d98a35b4d69f0f10c",
+    "merges.txt": "dd8db4bdb1c657799590e6470230c3c8ca25e6ab93f9cc0ecf80e6e768e95824",
+    "special_tokens_map.json": "8025ccc71c7f72bb75ff6fd39a58e45778704cebd3f0e28336794cccfe06966f"
+  }
+}

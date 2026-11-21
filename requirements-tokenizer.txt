@@ -1,0 +1,4 @@
+# Tokenizer training and evaluation only. The model and runtime tokenizer need
+# nothing beyond requirements.txt.
+tokenizers==0.23.3
+pyarrow>=17.0

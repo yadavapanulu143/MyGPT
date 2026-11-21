@@ -6,7 +6,9 @@
 //       tools/llama_parity.cpp -L $LLAMA_DIR/build/bin \
 //       -lllama -lggml -lggml-base -Wl,-rpath,$LLAMA_DIR/build/bin -o /tmp/llama_parity
 //
-// Usage: llama_parity model.gguf "prompt text" 12 [n_ctx]
+// Usage: llama_parity model.gguf "prompt text" 12 [n_ctx] [logits]
+//        the optional "logits" argument dumps the full logit vector instead of
+//        generating, which is how numerical parity is measured.
 // Output: one JSON object with prompt token ids and greedily generated ids.
 // Weights are read into anonymous memory (no mmap) so RSS is a true measure of
 // what the process needs, not of how much of the file the kernel has cached.
@@ -16,6 +18,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <algorithm>
+#include <functional>
 #include <vector>
 
 int main(int argc, char ** argv) {
@@ -52,17 +56,48 @@ int main(int argc, char ** argv) {
     if (n_tokens < 0) { fprintf(stderr, "tokenize failed\n"); return 1; }
     tokens.resize(n_tokens);
 
+    const bool dump_logits = argc > 5 && std::string(argv[5]) == "logits";
     printf("{\"prompt_ids\": [");
     for (int i = 0; i < n_tokens; ++i) printf("%s%d", i ? ", " : "", tokens[i]);
-    printf("], \"generated_ids\": [");
-
-    std::vector<llama_token> generated;
-    llama_batch batch = llama_batch_get_one(tokens.data(), n_tokens);
-    if (llama_decode(ctx, batch) != 0) { fprintf(stderr, "decode failed\n"); return 1; }
 
     const int n_vocab = llama_vocab_n_tokens(vocab);
+    if (n_tokens > (int) cparams.n_batch) {
+        fprintf(stderr, "prompt has %d tokens, n_batch is %u\n", n_tokens, cparams.n_batch);
+        return 1;
+    }
+    if (n_predict > 0 || dump_logits) {
+        llama_batch batch = llama_batch_get_one(tokens.data(), n_tokens);
+        if (llama_decode(ctx, batch) != 0) { fprintf(stderr, "decode failed\n"); return 1; }
+    }
+
+    if (dump_logits) {
+        const float * logits = llama_get_logits_ith(ctx, -1);
+        printf("], \"generated_ids\": [], \"logits\": [");
+        for (int i = 0; i < n_vocab; ++i) printf("%s%.6f", i ? ", " : "", logits[i]);
+        printf("]}\n");
+        llama_free(ctx);
+        llama_model_free(model);
+        llama_backend_free();
+        return 0;
+    }
+
+    printf("], \"generated_ids\": [");
+    std::vector<llama_token> generated;
+    std::vector<std::pair<float, int>> top_logits;
     for (int step = 0; step < n_predict; ++step) {
         const float * logits = llama_get_logits_ith(ctx, -1);
+        if (step == 0) {
+            top_logits.reserve(8);
+            for (int i = 0; i < n_vocab; ++i) {
+                if ((int) top_logits.size() < 8) {
+                    top_logits.emplace_back(logits[i], i);
+                    std::sort(top_logits.begin(), top_logits.end(), std::greater<>());
+                } else if (logits[i] > top_logits.back().first) {
+                    top_logits.back() = {logits[i], i};
+                    std::sort(top_logits.begin(), top_logits.end(), std::greater<>());
+                }
+            }
+        }
         int best = 0;
         for (int i = 1; i < n_vocab; ++i) {
             if (logits[i] > logits[best]) best = i;
@@ -71,8 +106,12 @@ int main(int argc, char ** argv) {
         printf("%s%d", step ? ", " : "", best);
 
         llama_token tok = best;
-        batch = llama_batch_get_one(&tok, 1);
-        if (llama_decode(ctx, batch) != 0) { fprintf(stderr, "decode failed\n"); return 1; }
+        llama_batch one = llama_batch_get_one(&tok, 1);
+        if (llama_decode(ctx, one) != 0) { fprintf(stderr, "decode failed\n"); return 1; }
+    }
+    printf("], \"top_logits\": [");
+    for (size_t i = 0; i < top_logits.size(); ++i) {
+        printf("%s[%d, %.6f]", i ? ", " : "", top_logits[i].second, top_logits[i].first);
     }
     printf("]}\n");
 

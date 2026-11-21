@@ -10,8 +10,8 @@ made on facts rather than optimism.
 | Stage | Status | Capability |
 |---|---|---|
 | Architecture + random init | done | none: logits are essentially arbitrary |
-| Tokenizer foundation | done | lossless byte-level encoding, 260 of 32768 ids populated |
-| Tokenizer training | not started | needs a text corpus |
+| Tokenizer foundation | done | lossless byte-level encoding |
+| Tokenizer training | **done (stage 2)** | 32,768 ids, 32,508 merges, 4.650 bytes/token held-out; see `docs/tokenizer_report.md` |
 | Pretraining | not started | needs a GPU cluster or rented GPUs |
 | Instruction tuning | not started | needs pretraining first |
 | Behaviour tuning | not started | needs instruction tuning first |
@@ -19,25 +19,27 @@ made on facts rather than optimism.
 A random model cannot answer questions. Everything below is about closing that
 gap; it is not a description of current behaviour.
 
-## 1. Tokenizer training
+## 1. Tokenizer training (completed in stage 2)
 
-The foundation in `tokenizer/tokenizer.py` already implements the training
-algorithm (`ByteLevelBPETokenizer.train`, deterministic, incremental pair
-counting). Steps:
+Executed with 849 MiB of English text (WikiText-103, Project Gutenberg, OASST1,
+CPython stdlib, 44 IETF RFCs), byte-level BPE, 32,768 ids, `min_frequency=2`.
+Result: 4.650 bytes/token on 0.5 MiB of held-out text, 100% HF parity, identical
+ids in llama.cpp. Details and reproduction commands are in `docs/tokenizer.md`;
+measurements are in `docs/tokenizer_report.md`.
 
-1. Assemble ~10-30 GB of English text: a FineWeb-Edu sample, English Wikipedia,
-   Project Gutenberg books, and 5-10% code (GitHub permissive licences) plus
-   simple arithmetic/structured data.
-2. Normalize to UTF-8, strip boilerplate, deduplicate near-duplicates (MinHash).
-3. Run `train(texts, vocab_size=32768, min_frequency=2)`; keep the 4 reserved
-   specials and 256 byte tokens, so 32499 merges are learned.
-4. Re-export the tokenizer config and re-run the GGUF export: `tools/export_gguf.py`
-   reads the merges from the same config file, so llama.cpp stays in sync.
-5. Validation: round-trip 10k random documents byte-exactly; check compression
-   (target 3.5-4.5 bytes/token on English prose); check that llama.cpp and the
-   Python tokenizer produce identical ids on the same sample.
+What is left for a later retrain, if the corpus changes:
 
-No tokenizer artifact is downloaded at any stage.
+1. Keep the specials and byte block fixed so ids 0-259 never move.
+2. Reserve chat tokens **before** training: the vocabulary is full at 32,768, so
+   either drop ~8 merges to free ids, or plan on `<bos>/<eos>` plus text role
+   markers.
+3. Add more code (the current 14.9 MiB leaves identifiers like `model` split) and
+   cap whitespace runs (about 15 slots went to 43-51 space tokens).
+4. Re-run `train_tokenizer.py`, `evaluate_tokenizer.py`, re-export the GGUF and
+   re-run `scripts/verify_gguf_parity.py`.
+
+No tokenizer artifact is downloaded at any stage; the trainer library
+(`tokenizers`) is a build-time dependency only.
 
 ## 2. Pretraining data
 

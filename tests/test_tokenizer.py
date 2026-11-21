@@ -126,13 +126,24 @@ def test_vocab_size_matches_model_embedding():
 
 
 def test_no_pretrained_artifacts_used():
-    """Guards against silently loading a downloaded tokenizer/vocab."""
+    """Guard against silently loading a downloaded tokenizer.
+
+    ``vocab.json``/``merges.txt`` are now legitimate outputs of our own trainer,
+    so the check is that they match the hashes recorded when we trained them and
+    that no SentencePiece/BPE model file of foreign origin exists.
+    """
+    import hashlib
     from pathlib import Path
 
     repo = Path(__file__).resolve().parents[1]
-    forbidden = ["tokenizer.json", "vocab.json", "merges.txt", "tokenizer.model", "spiece.model"]
-    found = [str(p) for p in repo.rglob("*") if p.name in forbidden]
+    foreign = ["tokenizer.model", "spiece.model", "sentencepiece.bpe.model"]
+    found = [str(p) for p in repo.rglob("*") if p.name in foreign]
     assert not found, f"pre-trained tokenizer artifacts found: {found}"
+
+    manifest = json.loads((repo / "tokenizer" / "tokenizer_manifest.json").read_text())
+    for name, expected in manifest["artifacts"].items():
+        digest = hashlib.sha256((repo / "tokenizer" / name).read_bytes()).hexdigest()
+        assert digest == expected, f"{name} was not produced by our trainer"
 
 
 def test_decode_unused_placeholder_ids_is_tolerant(tok):

@@ -16,7 +16,7 @@ tokenizer or config is involved at any point.
 | Attention heads | 16 (head_dim 64) |
 | KV heads | 4 (GQA, 4 query heads per KV head) |
 | FFN width | 2816 (2.75x d_model) |
-| Vocabulary | 32768 |
+| Vocabulary | 32768 (trained byte-level BPE, see `docs/tokenizer.md`) |
 | Context | 2048 tokens |
 | Position encoding | RoPE, base 10000, applied to Q and K only |
 | Normalization | RMSNorm, pre-norm, eps 1e-5 |
@@ -96,6 +96,25 @@ project avoids.
 **fp32 master weights.** 1.85 GiB on disk. Training needs fp32 (or bf16 with an
 fp32 master copy); inference converts to fp16 or quantized. Keeping fp32 as the
 source of truth means every quantized artifact can be regenerated.
+
+## 3a. Tokenizer interface
+
+The architecture only requires that the vocabulary size matches the embedding
+matrix. The Stage 2 tokenizer fills it with a trained 32,768-entry byte-level
+BPE vocabulary: ids 0-3 are `<pad>/<bos>/<eos>/<unk>`, 4-259 are raw bytes,
+260-32767 are merges. Because the 256 byte tokens exist, every UTF-8 string is
+representable and `<unk>` is never emitted. That property is what makes the
+model safe to pair with llama.cpp's `gpt2` tokenizer implementation: no
+normalisation, no unknown-token path, identical ids on both sides.
+
+Two export details matter for numerical parity and are easy to get wrong:
+
+- **RoPE layout.** This implementation uses the HF `rotate_half` convention
+  (pairs `x[i]` with `x[i + d/2]`), while ggml's `rope_norm` pairs `x[2i]` with
+  `x[2i+1]`. `tools/export_gguf.py` permutes `attn_q`/`attn_k` weights on export
+  (`permute_rope_weight`). Without it the GGUF still loads and generates, but its
+  logits only correlate with PyTorch at cosine 0.982 instead of 0.999999.
+- **Merges.** GGUF stores merges as `"left right"` token strings, not id pairs.
 
 ## 4. What is deliberately not in the model
 

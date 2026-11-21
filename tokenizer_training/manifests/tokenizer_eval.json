@@ -1,0 +1,382 @@
+{
+  "tokenizer_dir": "tokenizer",
+  "vocabulary": {
+    "vocab_size": 32768,
+    "target_vocab_size": 32768,
+    "num_merges": 32508,
+    "unique_ids": 32768,
+    "unique_token_bytes": 32768,
+    "placeholder_tokens": 0,
+    "special_tokens": {
+      "<pad>": 0,
+      "<bos>": 1,
+      "<eos>": 2,
+      "<unk>": 3
+    },
+    "duplicate_byte_strings": 0,
+    "longest_tokens": [
+      {
+        "id": 31491,
+        "bytes": 51,
+        "text": "                                                   "
+      },
+      {
+        "id": 31226,
+        "bytes": 48,
+        "text": "------------------------------------------------"
+      },
+      {
+        "id": 32581,
+        "bytes": 46,
+        "text": "                                              "
+      },
+      {
+        "id": 28921,
+        "bytes": 45,
+        "text": "                                             "
+      },
+      {
+        "id": 29740,
+        "bytes": 44,
+        "text": "                                            "
+      },
+      {
+        "id": 28019,
+        "bytes": 43,
+        "text": "                                           "
+      },
+      {
+        "id": 25844,
+        "bytes": 42,
+        "text": "                                          "
+      },
+      {
+        "id": 25571,
+        "bytes": 41,
+        "text": "                                         "
+      },
+      {
+        "id": 31982,
+        "bytes": 40,
+        "text": "----------------------------------------"
+      },
+      {
+        "id": 7331,
+        "bytes": 40,
+        "text": "                                        "
+      },
+      {
+        "id": 23161,
+        "bytes": 39,
+        "text": "                                       "
+      },
+      {
+        "id": 21580,
+        "bytes": 38,
+        "text": "                                      "
+      },
+      {
+        "id": 20062,
+        "bytes": 37,
+        "text": "                                     "
+      },
+      {
+        "id": 27404,
+        "bytes": 36,
+        "text": "\n\n                                  "
+      },
+      {
+        "id": 20442,
+        "bytes": 36,
+        "text": "                                    "
+      }
+    ]
+  },
+  "heldout": {
+    "sample_bytes": 524405,
+    "sample_tokens": 112785,
+    "bytes_per_token": 4.65,
+    "tokens_per_kib": 220.2,
+    "encode_seconds": 0.24,
+    "roundtrip_exact": true,
+    "unknown_tokens": 0,
+    "special_tokens_in_output": 0
+  },
+  "deterministic": true,
+  "probes": {
+    "plain_english": {
+      "chars": 63,
+      "tokens": 15,
+      "chars_per_token": 4.2,
+      "roundtrip_exact": true,
+      "ids": [
+        686,
+        2438,
+        4929,
+        13020,
+        25260,
+        641,
+        264,
+        23297,
+        3679,
+        48,
+        291,
+        811,
+        365,
+        20902,
+        50
+      ]
+    },
+    "contractions": {
+      "chars": 68,
+      "tokens": 20,
+      "chars_per_token": 3.4,
+      "roundtrip_exact": true,
+      "ids": [
+        77,
+        1581,
+        1323,
+        1540,
+        535,
+        3351,
+        1707,
+        1028,
+        365,
+        662,
+        2133,
+        48,
+        484,
+        534,
+        5357,
+        2955,
+        488,
+        3383,
+        1064,
+        50
+      ]
+    },
+    "numbers_math": {
+      "chars": 71,
+      "tokens": 34,
+      "chars_per_token": 2.09,
+      "roundtrip_exact": true,
+      "ids": [
+        686,
+        1347,
+        361,
+        529,
+        50,
+        3719,
+        3397,
+        61,
+        1573,
+        401,
+        54,
+        2907,
+        791,
+        45,
+        335,
+        2070,
+        50,
+        5994,
+        56,
+        8428,
+        48,
+        7323,
+        322,
+        105
+      ]
+    },
+    "code": {
+      "chars": 155,
+      "tokens": 50,
+      "chars_per_token": 3.1,
+      "roundtrip_exact": true,
+      "ids": [
+        4754,
+        4030,
+        99,
+        14624,
+        44,
+        4445,
+        309,
+        48,
+        26897,
+        48,
+        12097,
+        11994,
+        2030,
+        531,
+        2743,
+        335,
+        3728,
+        44,
+        2987,
+        102,
+        1700,
+        1529,
+        24972,
+        531
+      ]
+    },
+    "url_email": {
+      "chars": 79,
+      "tokens": 31,
+      "chars_per_token": 2.55,
+      "roundtrip_exact": true,
+      "ids": [
+        81,
+        688,
+        1388,
+        68,
+        19094,
+        50,
+        2723,
+        50,
+        2874,
+        418,
+        1028,
+        13368,
+        5645,
+        19094,
+        50,
+        1335,
+        51,
+        17614,
+        119,
+        67,
+        15024,
+        65,
+        54,
+        42
+      ]
+    },
+    "abbreviations": {
+      "chars": 77,
+      "tokens": 33,
+      "chars_per_token": 2.33,
+      "roundtrip_exact": true,
+      "ids": [
+        13486,
+        50,
+        3446,
+        401,
+        105,
+        50,
+        107,
+        50,
+        264,
+        16648,
+        45,
+        1018,
+        1289,
+        50,
+        4649,
+        378,
+        653,
+        290,
+        50,
+        113,
+        50,
+        333,
+        1675,
+        50
+      ]
+    },
+    "unicode": {
+      "chars": 63,
+      "tokens": 57,
+      "chars_per_token": 1.11,
+      "roundtrip_exact": true,
+      "ids": [
+        71,
+        1949,
+        1175,
+        12935,
+        16449,
+        336,
+        399,
+        9022,
+        402,
+        1175,
+        1266,
+        1103,
+        429,
+        2514,
+        777,
+        3329,
+        387,
+        170,
+        21313,
+        155,
+        169,
+        234,
+        160,
+        176
+      ]
+    },
+    "whitespace": {
+      "chars": 50,
+      "tokens": 15,
+      "chars_per_token": 3.33,
+      "roundtrip_exact": true,
+      "ids": [
+        1812,
+        525,
+        14,
+        1812,
+        632,
+        356,
+        13,
+        541,
+        4216,
+        1499,
+        17,
+        14,
+        30217,
+        763,
+        1812
+      ]
+    },
+    "technical": {
+      "chars": 90,
+      "tokens": 33,
+      "chars_per_token": 2.73,
+      "roundtrip_exact": true,
+      "ids": [
+        89,
+        368,
+        7917,
+        17094,
+        6760,
+        21672,
+        7137,
+        16008,
+        49,
+        12742,
+        13368,
+        5645,
+        3597,
+        4248,
+        50,
+        6559,
+        17169,
+        362,
+        50,
+        3650,
+        51,
+        1224,
+        112,
+        51
+      ]
+    }
+  },
+  "hf_parity": {
+    "sample_bytes": 105080,
+    "hf_tokens": 22800,
+    "our_tokens": 22800,
+    "length_match": true,
+    "mismatched_positions": 0,
+    "match_rate": 1.0
+  }
+}

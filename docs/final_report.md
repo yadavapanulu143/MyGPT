@@ -1,8 +1,9 @@
 # Final report: independent 0.5B-parameter LLM
 
-Stage 1 deliverable: architecture, tokenizer foundation, random initialization,
-structural verification, memory/performance analysis, quantized GGUF deployment
-path, and laptop instructions. No training has been performed.
+Stage 2 deliverable: architecture, **trained 32,768-entry tokenizer**, random
+initialization, structural verification, memory/performance analysis, quantized
+GGUF deployment path, laptop instructions and measured laptop benchmarks. No
+language-model training has been performed.
 
 Date: 2026-11-21
 Model: MyGPT 0.5B (`mygpt-0.5b`)
@@ -137,7 +138,9 @@ model and perplexity/benchmark scores.
 
 ## 7. Test results
 
-`python3 -m pytest tests -q` → **67 passed** (28.5 s).
+`python3 -m pytest tests -q` → **97 passed, 1 skipped** (28.8 s). The skipped
+test is the llama.cpp tokenizer-parity check, which needs a built harness; with
+`MYGPT_GGUF=dist/mygpt-0.5b-f16.gguf` it runs and passes (30/30 in that file).
 
 | Test file | Covers |
 |---|---|
@@ -145,19 +148,27 @@ model and perplexity/benchmark scores.
 | `test_parameters.py` (7) | exact count 495,799,296 analytic vs instantiated, breakdown sums, tied vs untied, 5% band |
 | `test_forward_pass.py` (13) | output shapes, causality (future tokens cannot change past logits), prefix stability, batch independence, KV-cache equivalence, context limit, generation with/without seed, EOS stop |
 | `test_save_load.py` (11) | random-init verification (mean/std/reproducibility/different-seed), no NaN/inf, manifest, bit-identical reload, config round-trip, tied weight saved once, mismatch detection, full-size 1.85 GiB round-trip |
-| `test_tokenizer.py` (17) | vocab layout, lossless round-trip (ASCII/Unicode/emoji/CRLF), no unknown tokens, specials, GPT-2-style pre-tokenization, save/load, trainer determinism, GGUF vocab view, no downloaded tokenizer artifacts |
+| `test_tokenizer.py` (17) | vocab layout, lossless round-trip (ASCII/Unicode/emoji/CRLF), no unknown tokens, specials, GPT-2-style pre-tokenization, save/load, trainer determinism, GGUF vocab view, artifact provenance |
+| `test_tokenizer_production.py` (29 + 1 integration) | the trained vocabulary: size, uniqueness, no placeholders, special ids, round-trips (plain/Unicode/empty/100 KB/code/numbers), determinism, save/load, GGUF vocabulary rebuild, manifest hashes, vocab/merges consistency, compression floor, llama.cpp id parity |
+| `test_tokenizer_training.py` (1) | the training pipeline end-to-end on a synthetic corpus: fills the vocabulary, reproducible artifacts, reloadable tokenizer |
 | `test_policy.py` (8) | policy loads from JSON, no keyword-based refusal, no blocklist attributes, sampling defaults, configurability |
 
 Additional verification:
 
-- **GGUF parity (F16)**: tokenizer ids and 8 greedy tokens from llama.cpp match the
-  PyTorch reference exactly on `"Hello world, this is a test of the model."`
-  (`scripts/verify_gguf_parity.py`, harness `tools/llama_parity.cpp`).
-- **GGUF parity (Q4_K_M)**: prompt ids still match exactly; the first generated
-  token can differ (22177 vs 25567 in the run recorded here) because with random
-  weights the top logits are near-ties and quantization noise decides the argmax.
-  This is expected for an untrained model and says nothing about quantized quality
-  on a trained one.
+- **Tokenizer parity (llama.cpp)**: identical ids for all 7 probe prompts
+  (plain, contractions, numbers/URL/email, multi-line code, Unicode+emoji,
+  abbreviations, 600-token text). Stage 1 reported a "match" here only because
+  the placeholder tokenizer had no merges; the merge strings were in fact being
+  written to GGUF as id pairs. Fixed in `tools/export_gguf.py`.
+- **GGUF parity (F16)**: logit cosine 0.99999881-0.99999935 against the PyTorch
+  reference (max abs diff 0.0030-0.0045), and greedy decoding is token-for-token
+  identical. Stage 1's GGUF failed this: q/k weights were exported without the
+  RoPE layout permutation, giving cosine 0.982. Fixed in
+  `tools/export_gguf.py::permute_rope_weight`.
+- **GGUF parity (Q8_0 / Q4_K_M)**: token ids identical; logit cosine 0.9993 for
+  Q8_0 and 0.952-0.961 for Q4_K_M, so on random weights the greedy chain diverges
+  for Q4_K_M (near-ties below the quantization error). Expected for untrained
+  weights; not evidence about a trained model.
 - **Random initialization**: mean -5.8e-07, std 0.0200004 (target 0.02), min
   -0.1153, max 0.1149, fingerprint reproducible from seed 1337, different for
   seed 1338. No pre-trained weights anywhere (`pretrained_weights_used: false`
@@ -173,16 +184,16 @@ Target: Ryzen 3 3250U (2 cores / 4 threads, AVX2, Vega 3 shared memory),
 | Does it fit in RAM? | Yes, comfortably. Q4_K_M needs ~400-550 MiB including KV cache at 2048 context; Windows leaves ~2.5-3.4 GB. |
 | Does it need a GPU? | No. CPU-only path verified; no CUDA, no ROCm. |
 | Does it need the internet? | No. One 292 MiB file plus a llama.cpp binary. |
-| Expected generation speed | **8-15 tokens/s** (Q4_K_M, 2 threads) - estimate |
-| Expected prompt processing | 50-80 tokens/s - estimate |
-| Expected first-token latency | ~1 s for a 50-token prompt - estimate |
+| Generation speed (measured) | **26.93 tokens/s** at 32 tokens, **25.26 tokens/s** at 128 (`llama-bench`, Q4_K_M, `-t 2`) |
+| Prompt processing (measured) | 40.37 tokens/s at 64 tokens, 52.85 tokens/s at 256 |
+| First-token latency | ~10 s for a 500-token prompt, ~1.5 s for a 50-token prompt (derived from measured prompt processing) |
 | Load time | 1-3 s from SSD - estimate |
 | Storage | 292 MiB model + ~50 MiB binary |
 | Risk | CPU is the bottleneck, not memory. Thermal throttling and battery power plans can halve throughput. |
 
-The estimate is derived by scaling the measured 67 t/s on 4 AVX-512 cores down by
-the laptop's ~4-6x lower vector throughput (2 cores, AVX2, lower clocks), which
-is consistent with the memory-bandwidth ceiling (~19-25 GB/s effective).
+The generation numbers are the owner's `llama-bench` run on the actual laptop, so
+the earlier 8-15 t/s estimate is retired (it over-weighted the AVX2 penalty). The
+laptop is ~2.7x slower than the 4-vCPU AVX-512 dev box at Q4_K_M, not 4-6x.
 
 ## 9. Future training requirements
 
@@ -203,13 +214,16 @@ CPU-only training is not practical: ~50 years for 10B tokens on this dev box.
 
 1. **The model cannot hold a conversation.** The weights are random; output is
    noise. Only the architecture, plumbing and deployment path are proven.
-2. The tokenizer has 260 of 32768 tokens populated (4 specials + 256 bytes).
-   Ids 260-32767 are placeholders until tokenizer training runs.
-3. Laptop performance numbers are estimates, not measurements.
+2. The tokenizer is trained and complete (32,768 ids, 0 placeholders), but it is
+   English-only: non-Latin scripts cost 1.1-2.0 characters/token, and code
+   coverage is thin (14.9 MiB of Python/RFC text), so identifiers like `model`
+   still split.
+3. Laptop generation speed is measured (25-27 tokens/s, Q4_K_M); load time and
+   memory figures remain estimates.
 4. Q4_K_M quality on a trained model is unmeasured; the choice is based on
    standard practice and on our own error metrics.
-5. No chat template is embedded in the GGUF yet; `llama-server` will not apply
-   one automatically until the trained tokenizer config carries it.
+5. No chat template is embedded in the GGUF yet, and the vocabulary is full at
+   32,768 ids, so adding chat tokens later means retraining the tokenizer.
 6. No long-context (>2048) support; RoPE base can be adjusted later, but the
    model has never seen longer sequences.
 7. No safety evaluation of actual behaviour is possible before training, so no
@@ -226,6 +240,7 @@ MyGPT/
 ├── README.md                        overview and quick start
 ├── .gitignore                       excludes checkpoints, dist, *.gguf
 ├── requirements.txt
+├── requirements-tokenizer.txt       training-only deps (tokenizers, pyarrow)
 ├── config/
 │   ├── model_config.json            the 495.8M architecture
 │   └── behaviour_policy.json        configurable low-refusal policy (prompt level)
@@ -238,8 +253,17 @@ MyGPT/
 │   ├── io.py                        safetensors I/O, tied-weight dedupe
 │   └── policy.py                    behaviour policy loader
 ├── tokenizer/
-│   ├── tokenizer.py                 byte-level BPE (encode/decode/train/GGUF view)
-│   └── config.json                  vocab layout, 32768 target, empty merges
+│   ├── tokenizer.py                 byte-level BPE runtime (encode/decode/GGUF view)
+│   ├── config.json                  trained vocabulary + 32,508 merges
+│   ├── vocab.json                   GPT-2-compatible token -> id map
+│   ├── merges.txt                   GPT-2-compatible merge list
+│   ├── special_tokens_map.json      reserved ids
+│   └── tokenizer_manifest.json      artifact hashes + corpus hash
+├── tokenizer_training/
+│   ├── prepare_corpus.py            5-source corpus builder (dedupe, filter, split)
+│   ├── train_tokenizer.py           HF BpeTrainer -> this project's format
+│   ├── evaluate_tokenizer.py        compression, probes, HF parity
+│   └── manifests/                   corpus, tokenizer, parity, logits manifests
 ├── initialization/
 │   └── initialize_weights.py        seeded init + verification + manifest
 ├── tests/
@@ -249,6 +273,8 @@ MyGPT/
 │   ├── test_forward_pass.py
 │   ├── test_save_load.py
 │   ├── test_tokenizer.py
+│   ├── test_tokenizer_production.py
+│   ├── test_tokenizer_training.py
 │   └── test_policy.py
 ├── scripts/
 │   ├── count_parameters.py
@@ -265,6 +291,8 @@ MyGPT/
 │   ├── architecture.md
 │   ├── memory_analysis.md
 │   ├── training_plan.md
+│   ├── tokenizer.md                 tokenizer design, corpus, reproduction
+│   ├── tokenizer_report.md          tokenizer evaluation and parity results
 │   └── final_report.md              this file
 ├── deployment/
 │   ├── README.md                    laptop quick start
