@@ -8,8 +8,8 @@ GPU driver, no internet connection, no account.
 
 | Item | Where it comes from |
 |---|---|
-| `mygpt-0.5b-q4_k_m.gguf` (292 MiB) | `dist/` in this repository, or the artifact attached to the release you build |
-| llama.cpp Windows build | https://github.com/ggml-org/llama.cpp/releases - pick the **avx2** x64 zip (Ryzen 3 3250U supports AVX2, not AVX-512) |
+| `mygpt-0.5b-q4_k_m.gguf` (292 MiB) | release asset: https://github.com/yadavapanulu143/MyGPT/releases/download/v0.1.0-stage1/mygpt-0.5b-q4_k_m.gguf (sha256 `02f1da92760a8feee593ab25cad922c67609a0fe1c468765e992ba8106bbc265`) |
+| llama.cpp Windows build | https://github.com/ggml-org/llama.cpp/releases/latest - download the asset named `llama-bNNNNN-bin-win-cpu-x64.zip` (~24 MiB). The x64 CPU build dispatches AVX2 at runtime, which is what this CPU needs. Do **not** pick cuda/rocm/sycl/vulkan builds. |
 | ~1 GB free disk | model + binary |
 
 Optional: `mygpt-0.5b-q5_k_m.gguf` (339 MiB) if you want a little more quality, or
@@ -18,13 +18,19 @@ Optional: `mygpt-0.5b-q5_k_m.gguf` (339 MiB) if you want a little more quality, 
 ## 2. Install (Windows 11)
 
 1. Create a folder, e.g. `C:\MyGPT`.
-2. Unzip the llama.cpp release into `C:\MyGPT\llama\`. You should see
-   `llama-cli.exe`, `llama-server.exe` and a bunch of `.dll` files.
-3. Copy `mygpt-0.5b-q4_k_m.gguf` into `C:\MyGPT\`.
+2. Unzip `llama-bNNNNN-bin-win-cpu-x64.zip` into `C:\MyGPT\llama\`. You should see
+   `llama-cli.exe`, `llama-server.exe`, `llama-bench.exe` and a bunch of `.dll` files.
+3. Download `mygpt-0.5b-q4_k_m.gguf` into `C:\MyGPT\` (link in the table above), then
+   check it arrived intact:
+
+   ```powershell
+   Get-FileHash .\mygpt-0.5b-q4_k_m.gguf -Algorithm SHA256
+   # must print 02F1DA92760A8FEEE593AB25CAD922C67609A0FE1C468765E992BA8106BBC265
+   ```
 
 ## 3. Run
 
-Open PowerShell in `C:\MyGPT`:
+Open PowerShell in `C:\MyGPT` (this is the whole thing - no Python, no installers):
 
 ```powershell
 cd C:\MyGPT
@@ -49,7 +55,8 @@ through the server:
 ```
 
 then open http://127.0.0.1:8080. It works fully offline; nothing leaves the
-machine.
+machine. Note that this model has no chat template yet, so the web UI will send
+the prompt as plain completion rather than as a chat turn.
 
 ## 4. Check the speed on your own machine
 
@@ -87,6 +94,7 @@ This path is for verification, not daily use.
 | Symptom | Fix |
 |---|---|
 | `unknown model architecture` | the GGUF was built for a different llama.cpp version; use a release from 2025 or later |
+| `failed to load model ... invalid magic` | the download was truncated; compare the SHA256 above and re-download |
 | very slow (< 3 t/s) | check `-t 2`, close background apps, plug in the charger (battery mode limits clocks) |
 | out of memory | use `-c 1024` or `-c 512`; Q4_K_M itself only needs ~330 MiB |
 | garbled output | expected: the model is untrained |

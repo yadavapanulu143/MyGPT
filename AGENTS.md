@@ -112,5 +112,8 @@ Everything except generated artifacts (all of these are tracked):
   `requirements.txt`, `pyproject.toml`, `.gitignore`
 
 Git-ignored and regenerable: `checkpoints/`, `dist/`, `__pycache__/`,
-`.pytest_cache/`. If the checkpoint or GGUF files must be preserved, attach them
-to a GitHub release (or use Git LFS); do not commit them.
+`.pytest_cache/`. The Q4_K_M artifact is published as a release asset:
+`v0.1.0-stage1` -> `mygpt-0.5b-q4_k_m.gguf` (sha256
+`02f1da92760a8feee593ab25cad922c67609a0fe1c468765e992ba8106bbc265`, 305,722,816
+bytes). Re-upload with `gh release upload v0.1.0-stage1 dist/mygpt-0.5b-q4_k_m.gguf
+--clobber` after rebuilding; never commit the file to git.
