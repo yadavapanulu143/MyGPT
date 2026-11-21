@@ -1,0 +1,515 @@
+{
+  "generated": "2026-11-21T14:43:53Z",
+  "purpose": "code-enriched corpus for the Stage 2.1 tokenizer candidate (not for language-model pretraining)",
+  "rules": {
+    "encoding": "utf-8 strict",
+    "normalisation": "NFC, CRLF->LF, C0 controls removed, 3+ newlines collapsed",
+    "min_file_bytes": 200,
+    "max_file_bytes": 1000000,
+    "max_non_ascii_fraction": 0.1,
+    "dedupe": "sha256 of normalised text",
+    "heldout": "sha256(text)[:8] % 20 == 0 (5%)",
+    "skipped_dirs": [
+      ".git",
+      ".github",
+      "__pycache__",
+      "bower_components",
+      "build",
+      "coverage",
+      "dist",
+      "fixtures",
+      "gen",
+      "generated",
+      "node_modules",
+      "site-packages",
+      "snapshots",
+      "test-data",
+      "testdata",
+      "third-party",
+      "third_party",
+      "vendor"
+    ],
+    "skipped_names": [
+      "Cargo.lock",
+      "Gemfile.lock",
+      "composer.lock",
+      "package-lock.json",
+      "pnpm-lock.yaml",
+      "poetry.lock",
+      "yarn.lock"
+    ]
+  },
+  "sources": {
+    "python/cpython@main": {
+      "repo": "python/cpython",
+      "ref": "main",
+      "license": "PSF-2.0",
+      "license_file": "LICENSE",
+      "license_header": [
+        "A. HISTORY OF THE SOFTWARE",
+        "==========================",
+        ""
+      ]
+    },
+    "TheAlgorithms/Python@master": {
+      "repo": "TheAlgorithms/Python",
+      "ref": "master",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_header": []
+    },
+    "pallets/flask@main": {
+      "repo": "pallets/flask",
+      "ref": "main",
+      "license": "BSD-3-Clause",
+      "license_file": "LICENSE.txt",
+      "license_header": [
+        "Copyright 2010 Pallets",
+        "",
+        "Redistribution and use in source and binary forms, with or without"
+      ]
+    },
+    "psf/requests@main": {
+      "repo": "psf/requests",
+      "ref": "main",
+      "license": "Apache-2.0",
+      "license_file": "LICENSE",
+      "license_header": [
+        "",
+        "                                 Apache License",
+        "                           Version 2.0, January 2004"
+      ]
+    },
+    "google/guava@master": {
+      "repo": "google/guava",
+      "ref": "master",
+      "license": "Apache-2.0",
+      "license_file": "LICENSE",
+      "license_header": [
+        "",
+        "                                 Apache License",
+        "                           Version 2.0, January 2004"
+      ]
+    },
+    "apache/commons-lang@master": {
+      "repo": "apache/commons-lang",
+      "ref": "master",
+      "license": "Apache-2.0",
+      "license_file": "LICENSE.txt",
+      "license_header": [
+        "",
+        "                                 Apache License",
+        "                           Version 2.0, January 2004"
+      ]
+    },
+    "TheAlgorithms/Java@master": {
+      "repo": "TheAlgorithms/Java",
+      "ref": "master",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_header": [
+        "MIT License",
+        "",
+        "Copyright (c) 2021 The Algorithms"
+      ]
+    },
+    "microsoft/TypeScript@main": {
+      "repo": "microsoft/TypeScript",
+      "ref": "main",
+      "license": "Apache-2.0",
+      "license_file": "LICENSE.txt",
+      "license_header": [
+        "Apache License",
+        "",
+        "Version 2.0, January 2004"
+      ]
+    },
+    "facebook/react@main": {
+      "repo": "facebook/react",
+      "ref": "main",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_header": [
+        "MIT License",
+        "",
+        "Copyright (c) Meta Platforms, Inc. and affiliates."
+      ]
+    },
+    "lodash/lodash@main": {
+      "repo": "lodash/lodash",
+      "ref": "main",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_header": [
+        "Copyright OpenJS Foundation and other contributors <https://openjsf.org/>",
+        "",
+        "Based on Underscore.js, copyright Jeremy Ashkenas,"
+      ]
+    },
+    "axios/axios@v1.x": {
+      "repo": "axios/axios",
+      "ref": "v1.x",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_header": [
+        "# Copyright (c) 2014-present Matt Zabriskie & Collaborators",
+        "",
+        "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:"
+      ]
+    },
+    "postgres/postgres@master": {
+      "repo": "postgres/postgres",
+      "ref": "master",
+      "license": "PostgreSQL",
+      "license_file": "COPYRIGHT",
+      "license_header": [
+        "PostgreSQL Database Management System",
+        "(also known as Postgres, formerly known as Postgres95)",
+        ""
+      ]
+    },
+    "twbs/bootstrap@main": {
+      "repo": "twbs/bootstrap",
+      "ref": "main",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_header": [
+        "The MIT License (MIT)",
+        "",
+        "Copyright (c) 2011-2026 The Bootstrap Authors"
+      ]
+    },
+    "tailwindlabs/tailwindcss@main": {
+      "repo": "tailwindlabs/tailwindcss",
+      "ref": "main",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_header": [
+        "MIT License",
+        "",
+        "Copyright (c) Tailwind Labs, Inc."
+      ]
+    },
+    "vuejs/core@main": {
+      "repo": "vuejs/core",
+      "ref": "main",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_header": [
+        "The MIT License (MIT)",
+        "",
+        "Copyright (c) 2018-present, Yuxi (Evan) You and Vue contributors"
+      ]
+    },
+    "prettier/prettier@main": {
+      "repo": "prettier/prettier",
+      "ref": "main",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_header": [
+        "Copyright \u00a9 James Long and contributors",
+        "",
+        "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:"
+      ]
+    },
+    "expressjs/express@master": {
+      "repo": "expressjs/express",
+      "ref": "master",
+      "license": "MIT",
+      "license_file": "LICENSE",
+      "license_header": [
+        "(The MIT License)",
+        "",
+        "Copyright (c) 2009-2014 TJ Holowaychuk <tj@vision-media.ca>"
+      ]
+    },
+    "apache/commons-io@master": {
+      "repo": "apache/commons-io",
+      "ref": "master",
+      "license": "Apache-2.0",
+      "license_file": "LICENSE.txt",
+      "license_header": [
+        "",
+        "                                 Apache License",
+        "                           Version 2.0, January 2004"
+      ]
+    },
+    "apache/calcite@main": {
+      "repo": "apache/calcite",
+      "ref": "main",
+      "license": "Apache-2.0",
+      "license_file": "LICENSE",
+      "license_header": [
+        "",
+        "                                 Apache License",
+        "                           Version 2.0, January 2004"
+      ]
+    },
+    "apache/spark@master": {
+      "repo": "apache/spark",
+      "ref": "master",
+      "license": "Apache-2.0",
+      "license_file": "LICENSE",
+      "license_header": [
+        "                                 Apache License",
+        "                           Version 2.0, January 2004",
+        "                        http://www.apache.org/licenses/"
+      ]
+    },
+    "pandas-dev/pandas@main": {
+      "repo": "pandas-dev/pandas",
+      "ref": "main",
+      "license": "BSD-3-Clause",
+      "license_file": "LICENSE",
+      "license_header": [
+        "BSD 3-Clause License",
+        "",
+        "Copyright (c) 2008-2011, AQR Capital Management, LLC, Lambda Foundry, Inc. and PyData Development Team"
+      ]
+    },
+    "scikit-learn/scikit-learn@main": {
+      "repo": "scikit-learn/scikit-learn",
+      "ref": "main",
+      "license": "BSD-3-Clause",
+      "license_file": "COPYING",
+      "license_header": [
+        "BSD 3-Clause License",
+        "",
+        "Copyright (c) 2007-2026 The scikit-learn developers."
+      ]
+    },
+    "django/django@main": {
+      "repo": "django/django",
+      "ref": "main",
+      "license": "BSD-3-Clause",
+      "license_file": "LICENSE",
+      "license_header": [
+        "Copyright (c) Django Software Foundation and individual contributors.",
+        "All rights reserved.",
+        ""
+      ]
+    },
+    "rust-lang/book@main": {
+      "repo": "rust-lang/book",
+      "ref": "main",
+      "license": "MIT",
+      "license_file": "LICENSE-MIT",
+      "license_header": [
+        "Copyright (c) 2010 The Rust Project Developers",
+        "",
+        "Permission is hereby granted, free of charge, to any"
+      ]
+    }
+  },
+  "statistics": {
+    "documents": 7972,
+    "bytes": 70247286,
+    "train_documents": 7573,
+    "train_bytes": 67456900,
+    "train_shards": 3,
+    "eval_documents": 399,
+    "eval_bytes": 3225915,
+    "eval_shards": 1,
+    "config_bytes": 4195496,
+    "per_source": {
+      "python/cpython@main": {
+        "license": "PSF-2.0",
+        "kind": "documentation",
+        "files": 129,
+        "bytes": 2159022,
+        "budget_mib": 2
+      },
+      "TheAlgorithms/Python@master": {
+        "license": "MIT",
+        "kind": "code",
+        "files": 887,
+        "bytes": 3212223,
+        "budget_mib": 3
+      },
+      "pallets/flask@main": {
+        "license": "BSD-3-Clause",
+        "kind": "code",
+        "files": 52,
+        "bytes": 566273,
+        "budget_mib": 2
+      },
+      "psf/requests@main": {
+        "license": "Apache-2.0",
+        "kind": "code",
+        "files": 33,
+        "bytes": 389660,
+        "budget_mib": 2
+      },
+      "google/guava@master": {
+        "license": "Apache-2.0",
+        "kind": "code",
+        "files": 489,
+        "bytes": 5245182,
+        "budget_mib": 5
+      },
+      "apache/commons-lang@master": {
+        "license": "Apache-2.0",
+        "kind": "code",
+        "files": 202,
+        "bytes": 3146498,
+        "budget_mib": 3
+      },
+      "TheAlgorithms/Java@master": {
+        "license": "MIT",
+        "kind": "code",
+        "files": 1301,
+        "bytes": 4196136,
+        "budget_mib": 4
+      },
+      "microsoft/TypeScript@main": {
+        "license": "Apache-2.0",
+        "kind": "code",
+        "files": 62,
+        "bytes": 1939708,
+        "budget_mib": 6
+      },
+      "facebook/react@main": {
+        "license": "MIT",
+        "kind": "code",
+        "files": 531,
+        "bytes": 4231949,
+        "budget_mib": 4
+      },
+      "lodash/lodash@main": {
+        "license": "MIT",
+        "kind": "code",
+        "files": 37,
+        "bytes": 1763007,
+        "budget_mib": 2
+      },
+      "axios/axios@v1.x": {
+        "license": "MIT",
+        "kind": "code",
+        "files": 60,
+        "bytes": 287409,
+        "budget_mib": 2
+      },
+      "postgres/postgres@master": {
+        "license": "PostgreSQL",
+        "kind": "code",
+        "files": 368,
+        "bytes": 5650073,
+        "budget_mib": 6
+      },
+      "twbs/bootstrap@main": {
+        "license": "MIT",
+        "kind": "code",
+        "files": 148,
+        "bytes": 485480,
+        "budget_mib": 5
+      },
+      "tailwindlabs/tailwindcss@main": {
+        "license": "MIT",
+        "kind": "code",
+        "files": 239,
+        "bytes": 3148704,
+        "budget_mib": 3
+      },
+      "vuejs/core@main": {
+        "license": "MIT",
+        "kind": "code",
+        "files": 221,
+        "bytes": 2107242,
+        "budget_mib": 2
+      },
+      "prettier/prettier@main": {
+        "license": "MIT",
+        "kind": "code",
+        "files": 493,
+        "bytes": 1435860,
+        "budget_mib": 2
+      },
+      "expressjs/express@master": {
+        "license": "MIT",
+        "kind": "code",
+        "files": 6,
+        "bytes": 62055,
+        "budget_mib": 1
+      },
+      "apache/commons-io@master": {
+        "license": "Apache-2.0",
+        "kind": "code",
+        "files": 246,
+        "bytes": 2099978,
+        "budget_mib": 2
+      },
+      "apache/calcite@main": {
+        "license": "Apache-2.0",
+        "kind": "code",
+        "files": 593,
+        "bytes": 4332290,
+        "budget_mib": 4
+      },
+      "apache/spark@master": {
+        "license": "Apache-2.0",
+        "kind": "code",
+        "files": 883,
+        "bytes": 6335323,
+        "budget_mib": 4
+      },
+      "pandas-dev/pandas@main": {
+        "license": "BSD-3-Clause",
+        "kind": "code",
+        "files": 112,
+        "bytes": 3160931,
+        "budget_mib": 3
+      },
+      "scikit-learn/scikit-learn@main": {
+        "license": "BSD-3-Clause",
+        "kind": "code",
+        "files": 145,
+        "bytes": 3180158,
+        "budget_mib": 3
+      },
+      "django/django@main": {
+        "license": "BSD-3-Clause",
+        "kind": "documentation",
+        "files": 201,
+        "bytes": 3165949,
+        "budget_mib": 3
+      },
+      "rust-lang/book@main": {
+        "license": "MIT",
+        "kind": "documentation",
+        "files": 111,
+        "bytes": 1220852,
+        "budget_mib": 2
+      }
+    },
+    "per_kind": {
+      "code": 63701463,
+      "documentation": 6545823
+    },
+    "per_language": {
+      "python/cpython@main": 8884346,
+      "TheAlgorithms/Python@master": 3212223,
+      "pallets/flask@main": 566273,
+      "psf/requests@main": 389660,
+      "google/guava@master": 5245182,
+      "apache/commons-lang@master": 3146498,
+      "TheAlgorithms/Java@master": 4196136,
+      "microsoft/TypeScript@main": 1939708,
+      "facebook/react@main": 4231949,
+      "lodash/lodash@main": 1763007,
+      "axios/axios@v1.x": 287409,
+      "postgres/postgres@master": 5650073,
+      "twbs/bootstrap@main": 485480,
+      "tailwindlabs/tailwindcss@main": 3148704,
+      "vuejs/core@main": 2107242,
+      "prettier/prettier@main": 1435860,
+      "expressjs/express@master": 62055,
+      "apache/commons-io@master": 2099978,
+      "apache/calcite@main": 4332290,
+      "apache/spark@master": 6335323,
+      "pandas-dev/pandas@main": 3160931,
+      "scikit-learn/scikit-learn@main": 3180158,
+      "django/django@main": 3165949,
+      "rust-lang/book@main": 1220852
+    }
+  }
+}

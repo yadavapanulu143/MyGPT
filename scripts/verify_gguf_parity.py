@@ -43,12 +43,12 @@ PROMPTS = {
 }
 
 
-def pytorch_ids(prompt: str) -> list[int]:
-    return ByteLevelBPETokenizer.load("tokenizer").encode(prompt)
+def pytorch_ids(prompt: str, tokenizer_dir: str = "tokenizer") -> list[int]:
+    return ByteLevelBPETokenizer.load(tokenizer_dir).encode(prompt)
 
 
-def pytorch_reference(checkpoint: str, prompt: str, n_predict: int) -> dict:
-    tok = ByteLevelBPETokenizer.load("tokenizer")
+def pytorch_reference(checkpoint: str, prompt: str, n_predict: int, tokenizer_dir: str = "tokenizer") -> dict:
+    tok = ByteLevelBPETokenizer.load(tokenizer_dir)
     model = MyGPT.from_pretrained(checkpoint, map_location="cpu")
     ids = torch.tensor([tok.encode(prompt)], dtype=torch.long)
 
@@ -78,6 +78,7 @@ def llama_cpp_reference(harness: str, gguf: str, prompt: str, n_predict: int, n_
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--checkpoint", default="checkpoints/mygpt-0.5b-init")
+    parser.add_argument("--tokenizer", default="tokenizer", help="tokenizer directory matching the GGUF")
     parser.add_argument("--gguf", default="dist/mygpt-0.5b-f16.gguf")
     parser.add_argument("--harness", default="/tmp/llama_parity")
     parser.add_argument("--n-predict", type=int, default=8)
@@ -99,7 +100,7 @@ def main() -> int:
 
     for name, prompt in PROMPTS.items():
         llama = llama_cpp_reference(args.harness, args.gguf, prompt, 0)
-        ours = pytorch_ids(prompt)
+        ours = pytorch_ids(prompt, args.tokenizer)
         entry = {
             "tokens": len(ours),
             "llama_tokens": len(llama["prompt_ids"]),
@@ -113,7 +114,7 @@ def main() -> int:
 
     if not args.skip_greedy:
         torch.set_num_threads(4)
-        reference = pytorch_reference(args.checkpoint, PROMPT, args.n_predict)
+        reference = pytorch_reference(args.checkpoint, PROMPT, args.n_predict, args.tokenizer)
         llama = llama_cpp_reference(args.harness, args.gguf, PROMPT, args.n_predict)
         greedy = {
             "prompt": PROMPT,

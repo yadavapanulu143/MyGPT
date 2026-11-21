@@ -2,3 +2,6 @@
 # nothing beyond requirements.txt.
 tokenizers==0.23.3
 pyarrow>=17.0
+# jinja2 renders tokenizer_training/chat_template.jinja in tests/test_chat_template.py
+# (llama.cpp uses its own Jinja engine at runtime, so it is not a runtime dependency).
+jinja2>=3.1

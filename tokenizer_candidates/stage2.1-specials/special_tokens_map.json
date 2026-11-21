@@ -1,0 +1,22 @@
+{
+  "special_tokens": {
+    "<pad>": 0,
+    "<bos>": 1,
+    "<eos>": 2,
+    "<unk>": 3,
+    "<|system|>": 32760,
+    "<|user|>": 32761,
+    "<|assistant|>": 32762,
+    "<|tool|>": 32763,
+    "<|end_message|>": 32764,
+    "<|end_turn|>": 32765,
+    "<|tool_call|>": 32766,
+    "<|reserved|>": 32767
+  },
+  "byte_offset": 4,
+  "num_byte_tokens": 256,
+  "first_merge_id": 260,
+  "last_merge_id": 32759,
+  "vocab_size": 32768,
+  "notes": "ids 0-3 specials, 4-259 raw bytes, 260+ merges in rank order, highest ids reserved conversational specials"
+}

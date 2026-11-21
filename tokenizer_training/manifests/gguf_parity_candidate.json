@@ -1,0 +1,65 @@
+{
+  "gguf": "/tmp/cand/candidate-f16.gguf",
+  "tokenizer": {
+    "plain": {
+      "tokens": 11,
+      "llama_tokens": 11,
+      "match": true
+    },
+    "contractions": {
+      "tokens": 20,
+      "llama_tokens": 20,
+      "match": true
+    },
+    "numbers_url": {
+      "tokens": 40,
+      "llama_tokens": 40,
+      "match": true
+    },
+    "code": {
+      "tokens": 25,
+      "llama_tokens": 25,
+      "match": true
+    },
+    "unicode": {
+      "tokens": 30,
+      "llama_tokens": 30,
+      "match": true
+    },
+    "abbreviations": {
+      "tokens": 33,
+      "llama_tokens": 33,
+      "match": true
+    },
+    "long": {
+      "tokens": 600,
+      "llama_tokens": 600,
+      "match": true
+    }
+  },
+  "status": "ok",
+  "greedy": {
+    "prompt": "Hello world, this is a test of the model.",
+    "pytorch_ids": [
+      19420,
+      19420,
+      19420,
+      19420,
+      19420,
+      19420,
+      19420,
+      19420
+    ],
+    "llama_ids": [
+      19420,
+      19420,
+      19420,
+      19420,
+      19420,
+      19420,
+      19420,
+      19420
+    ],
+    "match": true
+  }
+}

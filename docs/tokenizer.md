@@ -1,5 +1,11 @@
 # MyGPT tokenizer — design, corpus and training
 
+> **Stage 2.1 candidate (committed, not adopted):**
+> the same 32,768 ids with eight conversational specials reserved at the top and a
+> code-enriched corpus. See `docs/tokenizer_stage2.1_report.md`,
+> `docs/tokenizer_special_tokens.md` and `docs/chat_template.md`. The document
+> below describes the shipped Stage 2 tokenizer.
+
 Stage 2 replaces the 260-entry placeholder vocabulary from Stage 1 with a trained
 32,768-entry byte-level BPE tokenizer. The model architecture, parameter count
 (495,799,296) and embedding matrix (32,768 × 1024) are unchanged: only the

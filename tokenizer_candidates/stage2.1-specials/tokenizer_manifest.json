@@ -1,0 +1,61 @@
+{
+  "label": "stage2.1-specials",
+  "vocab_size": 32768,
+  "num_merges": 32500,
+  "special_tokens": {
+    "<pad>": 0,
+    "<bos>": 1,
+    "<eos>": 2,
+    "<unk>": 3,
+    "<|system|>": 32760,
+    "<|user|>": 32761,
+    "<|assistant|>": 32762,
+    "<|tool|>": 32763,
+    "<|end_message|>": 32764,
+    "<|end_turn|>": 32765,
+    "<|tool_call|>": 32766,
+    "<|reserved|>": 32767
+  },
+  "corpus": {
+    "shards": [
+      "train-0000.txt",
+      "train-0001.txt",
+      "train-0002.txt",
+      "train-0003.txt",
+      "train-0004.txt",
+      "train-0005.txt",
+      "train-0006.txt",
+      "train-0007.txt",
+      "train-0008.txt"
+    ],
+    "bytes": 890477210,
+    "manifest_sha256": "4286b0baf0011ac580dffb2044454f34296023b185e871e66fa06030e3576d03"
+  },
+  "training": {
+    "algorithm": "byte-level BPE (GPT-2 style, add_prefix_space=False, use_regex=True)",
+    "trainer": "tokenizers 0.23.3 (BpeTrainer, training only)",
+    "vocab_size": 32768,
+    "num_merges": 32500,
+    "min_frequency": 2,
+    "corpus_shards": [
+      "train-0000.txt",
+      "train-0001.txt",
+      "train-0002.txt",
+      "train-0003.txt",
+      "train-0004.txt",
+      "train-0005.txt",
+      "train-0006.txt",
+      "train-0007.txt",
+      "train-0008.txt"
+    ],
+    "corpus_bytes": 890477210,
+    "corpus_manifest_sha256": "4286b0baf0011ac580dffb2044454f34296023b185e871e66fa06030e3576d03",
+    "train_seconds": 99.3
+  },
+  "artifacts": {
+    "config.json": "d7d403692348f290890df091430f64aa65176d4cef69309ffb19c4acf1f4ea79",
+    "vocab.json": "3ed9b70626b92817954006954ad4162eba2a060cc1bb9c820f41983f4533220f",
+    "merges.txt": "7150a68acd9d18b11768e09e348ab591c9e540ec21f71c41a26a5bbe918278a7",
+    "special_tokens_map.json": "ca884406f0c5e2ad419a2db15e19eded18a4af8fbabcff86a8ed3175c3507d52"
+  }
+}

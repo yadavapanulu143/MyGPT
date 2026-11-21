@@ -12,7 +12,13 @@ Design
       2        <eos>
       3        <unk>
       4..259   raw byte 0x00 .. 0xFF
-      260..    BPE merges produced by ``train()`` (empty at this stage)
+      260..    BPE merges produced by ``train()``
+      last N   reserved conversational tokens (optional, see below)
+
+  Conversational specials such as ``<|user|>`` occupy the *highest* ids so that
+  adding them only rewrites the last merge ids and leaves every byte and merge id
+  below them untouched. Their ids must be contiguous at the end of the
+  vocabulary, which the trainer guarantees.
 
 * ``vocab_size = 32768`` matches the model's embedding matrix. The shipped
   vocabulary in ``tokenizer/config.json`` is trained (4 specials + 256 bytes +
@@ -77,22 +83,35 @@ class ByteLevelBPETokenizer:
         vocab_size: int = DEFAULT_VOCAB_SIZE,
         merges: Iterable[tuple[int, int]] | None = None,
         special_tokens: dict[str, int] | None = None,
+        chat_template: str | None = None,
     ) -> None:
         if vocab_size < BYTE_OFFSET + NUM_BYTES:
             raise ValueError(f"vocab_size must be >= {BYTE_OFFSET + NUM_BYTES}")
         self.vocab_size_target = vocab_size
         self.special_tokens = dict(special_tokens or SPECIAL_TOKENS)
         self.special_ids = {v: k for k, v in self.special_tokens.items()}
+        self.chat_template = chat_template
 
-        self.id_to_bytes: list[bytes] = []
+        missing_head = [i for i in range(BYTE_OFFSET) if i not in self.special_ids]
+        if missing_head:
+            raise ValueError(f"ids 0-{BYTE_OFFSET - 1} must be reserved for special tokens: {missing_head}")
+
+        self.tail_specials: list[tuple[int, str]] = sorted(
+            (tid, token) for token, tid in self.special_tokens.items() if tid >= BYTE_OFFSET + NUM_BYTES
+        )
+        self.merge_limit = self.tail_specials[0][0] if self.tail_specials else vocab_size
+
+        self.id_to_bytes: list[bytes | None] = []
         self.bytes_to_id: dict[bytes, int] = {}
         self._init_base_vocab()
 
         self.merges: list[tuple[int, int]] = []
         self.ranks: dict[tuple[int, int], int] = {}
         self._cache: dict[str, list[int]] = {}
+        self._special_re: re.Pattern[str] | None = None
         for pair in merges or []:
             self._add_merge(tuple(pair))
+        self._finalize_tail()
 
     # ------------------------------------------------------------- building
     def _init_base_vocab(self) -> None:
@@ -103,10 +122,23 @@ class ByteLevelBPETokenizer:
             self.id_to_bytes.append(bytes([b]))
             self.bytes_to_id[bytes([b])] = BYTE_OFFSET + b
 
+    def _finalize_tail(self) -> None:
+        """Place the reserved conversational tokens at their declared end ids."""
+        for token_id, token in self.tail_specials:
+            while len(self.id_to_bytes) < token_id:
+                self.id_to_bytes.append(None)
+            if len(self.id_to_bytes) == token_id:
+                self.id_to_bytes.append(token.encode("utf-8"))
+            else:  # pragma: no cover - only reachable with a malformed config
+                self.id_to_bytes[token_id] = token.encode("utf-8")
+        self._cache.clear()
+
     def _add_merge(self, pair: tuple[int, int]) -> int:
         if pair in self.ranks:
             return self.ranks[pair]
         new_id = len(self.id_to_bytes)
+        if new_id >= self.merge_limit:
+            raise ValueError(f"vocabulary is full: merge limit {self.merge_limit} reached")
         merged = self.id_to_bytes[pair[0]] + self.id_to_bytes[pair[1]]
         if merged in self.bytes_to_id:  # identical byte string already present
             return self.bytes_to_id[merged]
@@ -123,15 +155,22 @@ class ByteLevelBPETokenizer:
 
     @property
     def vocab_size(self) -> int:
-        return len(self.id_to_bytes)
+        """Number of populated ids (placeholders and unused slots excluded)."""
+        return sum(1 for entry in self.id_to_bytes if entry is not None)
 
     def token_bytes(self, token_id: int) -> bytes:
-        return self.id_to_bytes[token_id]
+        entry = self.id_to_bytes[token_id]
+        if entry is None:
+            raise KeyError(f"token id {token_id} is not populated")
+        return entry
 
     def token_text(self, token_id: int) -> str:
         if token_id in self.special_ids:
             return self.special_ids[token_id]
-        return self.id_to_bytes[token_id].decode("utf-8", errors="replace")
+        entry = self.id_to_bytes[token_id]
+        if entry is None:
+            return f"<unused_{token_id}>"
+        return entry.decode("utf-8", errors="replace")
 
     def get_vocab(self) -> dict[bytes, int]:
         return dict(self.bytes_to_id)
@@ -164,12 +203,43 @@ class ByteLevelBPETokenizer:
             token_id = self._add_merge(pair)
         return token_id
 
-    def encode(self, text: str, add_bos: bool = False, add_eos: bool = False) -> list[int]:
+    def _special_pattern(self) -> re.Pattern[str]:
+        if self._special_re is None:
+            names = sorted(self.special_tokens, key=len, reverse=True)
+            self._special_re = re.compile("(" + "|".join(re.escape(n) for n in names) + ")")
+        return self._special_re
+
+    def encode(
+        self,
+        text: str,
+        add_bos: bool = False,
+        add_eos: bool = False,
+        parse_special: bool = False,
+    ) -> list[int]:
+        """Encode text.
+
+        ``parse_special`` turns ``<|user|>``-style markers into their reserved
+        ids. Leave it off for raw user input: otherwise a user who types a
+        marker controls the template structure. Splitting on a marker also
+        breaks pre-tokenisation at that point, so a leading space after a marker
+        is encoded as its own token.
+        """
         ids: list[int] = []
         if add_bos:
             ids.append(self.special_tokens[BOS])
-        for pretoken in pretokenize(text):
-            ids.extend(self._encode_pretoken(pretoken))
+        if parse_special:
+            for part in self._special_pattern().split(text):
+                if not part:
+                    continue
+                special_id = self.special_tokens.get(part)
+                if special_id is not None:
+                    ids.append(special_id)
+                    continue
+                for pretoken in pretokenize(part):
+                    ids.extend(self._encode_pretoken(pretoken))
+        else:
+            for pretoken in pretokenize(text):
+                ids.extend(self._encode_pretoken(pretoken))
         if add_eos:
             ids.append(self.special_tokens[EOS])
         return ids
@@ -194,7 +264,12 @@ class ByteLevelBPETokenizer:
                 continue
             if skip_special_tokens and token_id in self.special_ids:
                 continue
-            chunks.append(self.id_to_bytes[token_id])
+            entry = self.id_to_bytes[token_id]
+            if entry is None:
+                if strict:
+                    raise IndexError(f"token id {token_id} is not populated")
+                continue
+            chunks.append(entry)
         return b"".join(chunks)
 
     # ---------------------------------------------------------------- train
@@ -211,7 +286,7 @@ class ByteLevelBPETokenizer:
         so the future training pipeline can build the real 32k vocabulary with
         the same code that produced the model config.
         """
-        target = vocab_size or self.vocab_size_target
+        target = min(vocab_size or self.vocab_size_target, self.merge_limit)
         word_counts: Counter[str] = Counter()
         for text in texts:
             word_counts.update(pretokenize(text))
@@ -269,7 +344,7 @@ class ByteLevelBPETokenizer:
         enc = bytes_to_unicode() if unicode_encode else None
         tokens: list[str] = []
         for token_id in range(self.vocab_size_target):
-            if token_id >= len(self.id_to_bytes):
+            if token_id >= len(self.id_to_bytes) or self.id_to_bytes[token_id] is None:
                 tokens.append(f"<unused_{token_id}>")
                 continue
             raw = self.id_to_bytes[token_id]
@@ -290,7 +365,7 @@ class ByteLevelBPETokenizer:
         """llama.cpp token type ids: 1=NORMAL, 2=UNKNOWN, 3=CONTROL, 5=UNUSED."""
         types = []
         for token_id in range(self.vocab_size_target):
-            if token_id >= len(self.id_to_bytes):
+            if token_id >= len(self.id_to_bytes) or self.id_to_bytes[token_id] is None:
                 types.append(5)
             elif token_id == self.special_tokens[UNK]:
                 types.append(2)
@@ -312,6 +387,7 @@ class ByteLevelBPETokenizer:
             "num_byte_tokens": NUM_BYTES,
             "pre_tokenizer": "gpt2",
             "byte_level": True,
+            "chat_template": self.chat_template,
             "merges": [list(pair) for pair in self.merges],
         }
 
@@ -328,6 +404,7 @@ class ByteLevelBPETokenizer:
             vocab_size=data.get("vocab_size", DEFAULT_VOCAB_SIZE),
             merges=[tuple(p) for p in data.get("merges", [])],
             special_tokens=data.get("special_tokens"),
+            chat_template=data.get("chat_template"),
         )
 
     @classmethod

@@ -15,10 +15,20 @@ break byte-exact round trips for arbitrary UTF-8, and require a different GGUF
 tokenizer model. The existing GPT-2-style byte-level BPE already matches
 llama.cpp's ``gpt2`` tokenizer implementation exactly (verified in Stage 1).
 
+Reserved conversational tokens occupy the highest ids (see
+``tokenizer/tokenizer.py``), so adding them only removes merges from the top of
+the rank list and leaves every byte and merge id below them unchanged.
+
 Usage:
     python3 tokenizer_training/train_tokenizer.py \
         --corpus /workspace/corpus/processed/train \
         --out tokenizer --vocab-size 32768
+
+    python3 tokenizer_training/train_tokenizer.py \
+        --corpus /workspace/corpus/processed_v2/train \
+        --out tokenizer_candidate --vocab-size 32768 \
+        --extra-specials "<|system|>,<|user|>,<|assistant|>,<|tool|>,<|end_message|>,<|end_turn|>,<|tool_call|>,<|reserved|>" \
+        --chat-template tokenizer_training/chat_template.jinja
 """
 
 from __future__ import annotations
@@ -75,7 +85,19 @@ def main() -> None:
     parser.add_argument("--corpus-manifest", default=None, help="corpus manifest to hash into the tokenizer manifest")
     parser.add_argument("--label", default="full", help="free-form label recorded in the manifest")
     parser.add_argument("--work-dir", default="/tmp/tokenizer_train")
+    parser.add_argument(
+        "--extra-specials",
+        default="",
+        help="comma-separated conversational special tokens, reserved at the highest ids",
+    )
+    parser.add_argument("--chat-template", default=None, help="Jinja chat template file stored in config.json and GGUF")
     args = parser.parse_args()
+
+    extra_specials = [t.strip() for t in args.extra_specials.split(",") if t.strip()]
+    special_map = dict(SPECIAL_TOKENS)
+    for offset, token in enumerate(extra_specials):
+        special_map[token] = args.vocab_size - len(extra_specials) + offset
+    chat_template = Path(args.chat_template).read_text(encoding="utf-8") if args.chat_template else None
 
     from tokenizers import Tokenizer, decoders, models, pre_tokenizers, trainers
 
@@ -86,14 +108,16 @@ def main() -> None:
         shards = shards[: args.max_shards]
     corpus_bytes = sum(p.stat().st_size for p in shards)
 
-    n_specials = len(SPECIAL_TOKENS)
-    hf_vocab_size = args.vocab_size - n_specials
+    hf_vocab_size = args.vocab_size - len(SPECIAL_TOKENS) - len(extra_specials)
     n_merges_expected = hf_vocab_size - NUM_BYTES
     if n_merges_expected <= 0:
         raise SystemExit("vocab size too small")
 
     print(f"[train] shards={len(shards)} bytes={corpus_bytes / 2**20:.1f} MiB")
-    print(f"[train] target vocab={args.vocab_size} = {n_specials} specials + {NUM_BYTES} bytes + {n_merges_expected} merges")
+    print(
+        f"[train] target vocab={args.vocab_size} = {len(SPECIAL_TOKENS)} head specials + "
+        f"{NUM_BYTES} bytes + {n_merges_expected} merges + {len(extra_specials)} conversational specials"
+    )
 
     tokenizer = Tokenizer(models.BPE())
     tokenizer.pre_tokenizer = pre_tokenizers.ByteLevel(add_prefix_space=False, use_regex=True)
@@ -138,12 +162,17 @@ def main() -> None:
         merged = to_bytes(left + right)
         new_id = BYTE_OFFSET + NUM_BYTES + rank
         expected = hf_vocab.get(left + right)
-        if expected is not None and expected + n_specials != new_id:
-            raise SystemExit(f"id mismatch at merge {rank}: hf={expected} ours={new_id - n_specials}")
+        if expected is not None and expected + BYTE_OFFSET != new_id:
+            raise SystemExit(f"id mismatch at merge {rank}: hf={expected} ours={new_id - BYTE_OFFSET}")
         merged_bytes_to_id[merged] = new_id
         merges.append((left_id, right_id))
 
-    tokenizer_out = ByteLevelBPETokenizer(vocab_size=args.vocab_size, merges=merges)
+    tokenizer_out = ByteLevelBPETokenizer(
+        vocab_size=args.vocab_size,
+        merges=merges,
+        special_tokens=special_map,
+        chat_template=chat_template,
+    )
     if tokenizer_out.vocab_size != args.vocab_size:
         raise SystemExit(
             f"trained tokenizer has {tokenizer_out.vocab_size} entries, expected {args.vocab_size} "
@@ -152,10 +181,10 @@ def main() -> None:
 
     # Cross-check every id against the HF tokenizer's byte string.
     hf_by_id = {idx: tok for tok, idx in hf_vocab.items()}
-    for token_id in range(BYTE_OFFSET + NUM_BYTES, args.vocab_size):
-        hf_token = hf_by_id.get(token_id - n_specials)
+    for token_id in range(BYTE_OFFSET + NUM_BYTES, tokenizer_out.merge_limit):
+        hf_token = hf_by_id.get(token_id - BYTE_OFFSET)
         if hf_token is None:
-            raise SystemExit(f"hf vocab missing id {token_id - n_specials}")
+            raise SystemExit(f"hf vocab missing id {token_id - BYTE_OFFSET}")
         if to_bytes(hf_token) != tokenizer_out.token_bytes(token_id):
             raise SystemExit(f"byte mismatch at id {token_id}")
 
@@ -163,11 +192,14 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     config = tokenizer_out.to_dict()
     config["description"] = (
-        "Independent byte-level BPE trained for English on a documented corpus "
-        "(see tokenizer/tokenizer_manifest.json). GPT-2 compatible: llama.cpp "
-        "loads it as tokenizer.ggml.model=gpt2."
+        "Independent byte-level BPE trained on a documented corpus "
+        "(see tokenizer_manifest.json in the same directory). GPT-2 compatible: "
+        "llama.cpp loads it as tokenizer.ggml.model=gpt2."
     )
     config["trained"] = True
+    config["special_token_layout"] = (
+        "ids 0-3 head specials, 4-259 bytes, 260+ merges, highest ids conversational specials"
+    )
     config["training"] = {
         "algorithm": "byte-level BPE (GPT-2 style, add_prefix_space=False, use_regex=True)",
         "trainer": f"tokenizers {__import__('tokenizers').__version__} (BpeTrainer, training only)",
@@ -206,8 +238,12 @@ def main() -> None:
                 "byte_offset": BYTE_OFFSET,
                 "num_byte_tokens": NUM_BYTES,
                 "first_merge_id": BYTE_OFFSET + NUM_BYTES,
+                "last_merge_id": tokenizer_out.merge_limit - 1,
                 "vocab_size": args.vocab_size,
-                "notes": "ids 0-3 specials, 4-259 raw bytes, 260+ merges in rank order",
+                "notes": (
+                    "ids 0-3 specials, 4-259 raw bytes, 260+ merges in rank order, "
+                    "highest ids reserved conversational specials"
+                ),
             },
             indent=2,
         )

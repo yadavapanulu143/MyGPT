@@ -1,0 +1,35 @@
+{#-
+  MyGPT chat template (ChatML-like, one marker per role).
+
+  Wire format, one message per block:
+
+      <|system|>\n{content}<|end_message|>\n
+      <|user|>\n{content}<|end_message|>\n
+      <|assistant|>\n{content}<|end_message|>\n
+      <|tool|>\n{content}<|end_message|>\n
+
+  A completed conversation ends with <|end_turn|>\n. With
+  add_generation_prompt the trailing block is <|assistant|>\n instead, so the
+  model continues from an empty assistant message.
+
+  scripts/render_chat.py implements the same format in Python; the two are
+  checked against each other by tests/test_chat_template.py.
+-#}
+{%- for message in messages -%}
+{%- if message['role'] == 'system' -%}
+<|system|>{{ '\n' }}{{ message['content'] }}<|end_message|>{{ '\n' }}
+{%- elif message['role'] == 'user' -%}
+<|user|>{{ '\n' }}{{ message['content'] }}<|end_message|>{{ '\n' }}
+{%- elif message['role'] == 'assistant' -%}
+<|assistant|>{{ '\n' }}{{ message['content'] }}<|end_message|>{{ '\n' }}
+{%- elif message['role'] == 'tool' -%}
+<|tool|>{{ '\n' }}{{ message['content'] }}<|end_message|>{{ '\n' }}
+{%- else -%}
+{{ raise_exception('unknown role: ' + message['role']) }}
+{%- endif -%}
+{%- endfor -%}
+{%- if add_generation_prompt -%}
+<|assistant|>{{ '\n' }}
+{%- else -%}
+<|end_turn|>{{ '\n' }}
+{%- endif -%}

@@ -100,6 +100,14 @@ llama.cpp build used for verification: `cmake -B build -DCMAKE_BUILD_TYPE=Releas
   bug. Use the parity harness (token ids), not text, to verify correctness.
 - PyTorch is 4-5x slower than llama.cpp on CPU; do not benchmark the laptop path
   with PyTorch.
+- Special tokens live at the *top* of the id space (`merge_limit`), never in the
+  middle: inserting them earlier would renumber every merge and invalidate the
+  checkpoint's embeddings.
+- `encode(parse_special=False)` is the default and must stay the default; the
+  chat path (`scripts/render_chat.py::encode_chat`) appends marker ids instead of
+  re-parsing rendered text, which is what stops prompt injection via user text.
+- The chat template exists twice (Jinja file and Python renderer); `tests/
+  test_chat_template.py` diffs them, so edit both or the test fails.
 
 ## Status (2026-11-21)
 
@@ -114,15 +122,23 @@ export bugs found on the way: merges written as ids, and missing RoPE
 permutation. Laptop generation measured by the owner: 25.26-26.93 tokens/s
 (Q4_K_M, `llama-bench`).
 
+Stage 2.1 candidate (committed, NOT adopted): eight
+conversational specials reserved at ids 32,760-32,767 (vocabulary stays 32,768,
+merges drop to 32,500, ids 0-32,759 stay byte-identical to Stage 2), a
+ChatML-like chat template in `config.json` and GGUF, and a 42.1 MiB
+permissively-licensed code corpus added to training. Code tokens -13.3%, Java
+identifiers -40%, English cost +0.08%. llama.cpp token-id parity exact on F16 and
+Q4_K_M, logit cosine 0.99999988. 126 tests pass, 1 skipped.
+
 Not done (needs approval): pretraining, instruction tuning, behaviour tuning,
-long-context extension, multilingual tokenizer, chat template in GGUF.
+long-context extension, multilingual tokenizer, merging the Stage 2.1 candidate.
 
 ## Next steps, in order
 
 1. Approve training scope (corpus, GPU budget, evaluation thresholds).
-2. Decide chat-token strategy: the 32,768 ids are full, so either reserve ids now
-   by retraining with a smaller merge count, or reuse `<bos>/<eos>` plus text
-   role markers.
+2. Decide on the Stage 2.1 candidate: merge it (copy
+   `tokenizer_candidates/stage2.1-code/*` over `tokenizer/`, re-export, re-run
+   parity, tag) or keep the Stage 2 tokenizer and drop the chat template.
 3. Pretrain 10-20B tokens on rented GPUs; monitor validation loss.
 4. Instruction-tune, then behaviour-tune (DPO/ORPO against over-refusal).
 5. Evaluate: perplexity, lm-eval-harness, XSTest over-refusal, safety floor.

@@ -123,6 +123,8 @@ def export_gguf(
     writer.add_uint32("tokenizer.ggml.padding_token_id", config.pad_token_id)
     writer.add_bool("tokenizer.ggml.add_bos_token", False)
     writer.add_bool("tokenizer.ggml.add_eos_token", False)
+    if tokenizer.chat_template:
+        writer.add_string("tokenizer.chat_template", tokenizer.chat_template)
 
     exported = []
     for name, tensor in state.items():

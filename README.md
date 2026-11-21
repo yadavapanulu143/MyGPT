@@ -5,7 +5,8 @@ randomly initialized in this repository. No pre-trained weights, no downloaded
 tokenizer, no fine-tuning of an existing model. Designed for CPU-only, offline
 inference on a Ryzen 3 3250U laptop with 8 GB RAM.
 
-> **Status: stage 2 complete (tokenizer), training not started.** The
+> **Status: stage 2 complete (tokenizer); stage 2.1 candidate committed but not
+> adopted; training not started.** The
 > architecture, the trained 32,768-entry tokenizer, the verification suite and
 > the quantized GGUF deployment path are complete and tested. The weights are
 > random, so the model produces noise - it is not yet a conversational
@@ -19,6 +20,7 @@ inference on a Ryzen 3 3250U laptop with 8 GB RAM.
 | Parameter count | 495,799,296 analytic = instantiated = on disk |
 | Tests | 97 passing, 1 skipped (`pytest tests -q`) |
 | Tokenizer | trained 32,768-entry byte-level BPE, 4.65 bytes/token on held-out English |
+| Stage 2.1 candidate | same 32,768 ids + 8 reserved chat tokens + code-aware merges; 13% fewer code tokens, 0.08% English cost (`docs/tokenizer_stage2.1_report.md`) |
 | Random init | verified (mean ~0, std 0.0200, seed-reproducible, no pre-trained data) |
 | Causal masking | verified (future tokens cannot change past logits) |
 | KV cache | verified equivalent to a full forward pass |
@@ -49,6 +51,17 @@ llama-quantize dist/mygpt-0.5b-f16.gguf dist/mygpt-0.5b-q4_k_m.gguf Q4_K_M
 python3 scripts/benchmark_memory.py --contexts 64,256 --dtypes float32,bfloat16
 python3 scripts/quantize_reference.py
 python3 scripts/verify_gguf_parity.py --gguf dist/mygpt-0.5b-f16.gguf
+```
+
+The stage 2.1 candidate tokenizer (conversational tokens + code corpus) is under
+review in `tokenizer_candidates/`; it does not replace the shipped tokenizer until
+approved:
+
+```bash
+python3 scripts/render_chat.py --tokenizer tokenizer_candidates/stage2.1-code \
+    --system "You are MyGPT." --user "Explain RoPE." --json
+python3 tokenizer_training/compare_tokenizers.py --tokenizer baseline=tokenizer \
+    --tokenizer code=tokenizer_candidates/stage2.1-code
 ```
 
 Retraining the tokenizer needs the extra training dependencies
