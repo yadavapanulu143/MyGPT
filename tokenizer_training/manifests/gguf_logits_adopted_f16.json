@@ -1,0 +1,26 @@
+{
+  "gguf": "dist/mygpt-0.5b-f16.gguf",
+  "prompt": "def train(model, data): return model.fit(data)",
+  "cosine": 0.99999988,
+  "max_abs_diff": 0.003119,
+  "torch_argmax": 14007,
+  "llama_argmax": 14007,
+  "top1_match": true,
+  "torch_top5": [
+    14007,
+    5047,
+    10462,
+    25103,
+    2806
+  ],
+  "llama_top5": [
+    14007,
+    5047,
+    25103,
+    10462,
+    2806
+  ],
+  "threshold": 0.9999,
+  "top5_overlap": 5,
+  "status": "ok"
+}

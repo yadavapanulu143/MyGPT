@@ -8,7 +8,7 @@ GPU driver, no internet connection, no account.
 
 | Item | Where it comes from |
 |---|---|
-| `mygpt-0.5b-q4_k_m.gguf` (292 MiB) | release asset: https://github.com/yadavapanulu143/MyGPT/releases/download/v0.2.0-stage2/mygpt-0.5b-q4_k_m.gguf (sha256 `3ac8777b1000c52689fcb656f92f9d67fa9076caca651477b92e256c84003ca5`, 306,040,448 bytes) |
+| `mygpt-0.5b-q4_k_m.gguf` (292 MiB) | release asset: https://github.com/yadavapanulu143/MyGPT/releases/download/v0.3.1-stage2.1/mygpt-0.5b-q4_k_m.gguf (sha256 `2f696a08499a1b1bfe36115ef2455b108154e56c20bd717a6764988e1bd5e91d`, 306,034,880 bytes). The Stage 2 build is preserved at https://github.com/yadavapanulu143/MyGPT/releases/download/v0.2.0-stage2/mygpt-0.5b-q4_k_m.gguf |
 | llama.cpp Windows build | https://github.com/ggml-org/llama.cpp/releases/latest - download the asset named `llama-bNNNNN-bin-win-cpu-x64.zip` (~24 MiB). The x64 CPU build dispatches AVX2 at runtime, which is what this CPU needs. Do **not** pick cuda/rocm/sycl/vulkan builds. |
 | ~1 GB free disk | model + binary |
 
@@ -25,7 +25,7 @@ Optional: `mygpt-0.5b-q5_k_m.gguf` (339 MiB) if you want a little more quality, 
 
    ```powershell
    Get-FileHash .\mygpt-0.5b-q4_k_m.gguf -Algorithm SHA256
-   # must print 02F1DA92760A8FEEE593AB25CAD922C67609A0FE1C468765E992BA8106BBC265
+   # must print 2F696A08499A1B1BFE36115EF2455B108154E56C20BD717A6764988E1BD5E91D
    ```
 
 ## 3. Run

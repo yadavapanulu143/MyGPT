@@ -1,4 +1,8 @@
-"""Stage 2: production tokenizer (32,768 entries, trained) validation."""
+"""Production tokenizer (32,768 entries, trained) validation.
+
+Covers the adopted Stage 2.1 tokenizer: 4 head specials + 256 bytes + 32,500
+merges + 8 conversational specials reserved at ids 32,760-32,767.
+"""
 
 from __future__ import annotations
 
@@ -51,7 +55,8 @@ def test_vocabulary_size_is_exactly_32768(tok):
     assert tok.vocab_size == VOCAB_SIZE
     assert tok.vocab_size_target == VOCAB_SIZE
     assert len(tok.gguf_tokens()) == VOCAB_SIZE
-    assert len(tok.merges) == VOCAB_SIZE - 4 - 256
+    assert len(tok.merges) == VOCAB_SIZE - 4 - 256 - 8
+    assert tok.merge_limit == 32760
 
 
 # 2. ids valid and unique
@@ -73,13 +78,27 @@ def test_no_placeholder_entries(tok):
 
 
 # 4. special tokens
+CHAT_TOKENS = {
+    "<|system|>": 32760,
+    "<|user|>": 32761,
+    "<|assistant|>": 32762,
+    "<|tool|>": 32763,
+    "<|end_message|>": 32764,
+    "<|end_turn|>": 32765,
+    "<|tool_call|>": 32766,
+    "<|reserved|>": 32767,
+}
+
+
 def test_special_token_ids_documented(tok):
-    assert tok.special_tokens == {PAD: 0, BOS: 1, EOS: 2, UNK: 3}
+    expected = {PAD: 0, BOS: 1, EOS: 2, UNK: 3, **CHAT_TOKENS}
+    assert tok.special_tokens == expected
     mapping = json.loads((TOKENIZER_DIR / "special_tokens_map.json").read_text())
-    assert mapping["special_tokens"] == {PAD: 0, BOS: 1, EOS: 2, UNK: 3}
+    assert mapping["special_tokens"] == expected
     assert mapping["vocab_size"] == VOCAB_SIZE
     assert mapping["byte_offset"] == 4
     assert mapping["first_merge_id"] == 260
+    assert mapping["last_merge_id"] == 32759
 
     cfg = ModelConfig.load(REPO / "config" / "model_config.json")
     assert (cfg.pad_token_id, cfg.bos_token_id, cfg.eos_token_id, cfg.unk_token_id) == (0, 1, 2, 3)
@@ -178,7 +197,9 @@ def test_gguf_vocabulary_rebuilds_identically(tok):
     tokens = tok.gguf_tokens()
     id_of = {token: i for i, token in enumerate(tokens)}
     pairs = [tuple(id_of[part] for part in merge.split(" ")) for merge in tok.gguf_merges()]
-    rebuilt = ByteLevelBPETokenizer(vocab_size=VOCAB_SIZE, merges=pairs)
+    rebuilt = ByteLevelBPETokenizer(
+        vocab_size=VOCAB_SIZE, merges=pairs, special_tokens=tok.special_tokens, chat_template=tok.chat_template
+    )
     assert rebuilt.vocab_size == VOCAB_SIZE
     for text in SAMPLES + ["Tokenizer parity matters more than size."]:
         assert rebuilt.encode(text) == tok.encode(text)
@@ -187,7 +208,8 @@ def test_gguf_vocabulary_rebuilds_identically(tok):
 def test_gguf_token_types(tok):
     types = tok.gguf_token_types()
     assert types[:4] == [3, 3, 3, 2]  # control, control, control, unknown
-    assert set(types[4:]) == {1}
+    assert set(types[4:32760]) == {1}
+    assert types[32760:] == [3] * 8  # conversational specials are control tokens
     assert 5 not in types  # no unused slots left
 
 
@@ -217,7 +239,7 @@ def test_llama_cpp_tokenizes_identically(tok):
 def test_manifest_hashes_match_artifacts():
     manifest = json.loads((TOKENIZER_DIR / "tokenizer_manifest.json").read_text())
     assert manifest["vocab_size"] == VOCAB_SIZE
-    assert manifest["num_merges"] == VOCAB_SIZE - 260
+    assert manifest["num_merges"] == VOCAB_SIZE - 260 - 8
     for name, expected in manifest["artifacts"].items():
         digest = hashlib.sha256((TOKENIZER_DIR / name).read_bytes()).hexdigest()
         assert digest == expected, f"{name} does not match the manifest"

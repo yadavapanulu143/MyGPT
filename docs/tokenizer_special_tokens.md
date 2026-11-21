@@ -1,6 +1,6 @@
-# Reserved conversational tokens (Stage 2.1 candidate)
+# Reserved conversational tokens (Stage 2.1, adopted)
 
-The candidate tokenizer keeps the vocabulary at **exactly 32,768 ids** and adds
+The adopted tokenizer keeps the vocabulary at **exactly 32,768 ids** and adds
 eight reserved conversational tokens. They live at the **top** of the id space so
 that adding them only removes eight merges; every byte id and every remaining
 merge id is unchanged from Stage 2.

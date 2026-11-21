@@ -1,5 +1,11 @@
 # Tokenizer evaluation report (Stage 2)
 
+> **Historical.** This report describes the Stage 2 tokenizer. It was
+> superseded on 2026-11-21 by the adopted Stage 2.1 tokenizer (eight
+> conversational specials, 32,500 merges, code-enriched corpus); see
+> `docs/tokenizer_stage2.1_report.md`. Numbers below are left unchanged so the
+> Stage 2 release stays reproducible.
+
 All numbers below were measured in the development environment (4 vCPU EPYC,
 no GPU, Debian 13, Python 3.13). Held-out text is
 `/workspace/corpus/processed/eval/heldout.txt`, 9.59 MiB / 2,289 documents that

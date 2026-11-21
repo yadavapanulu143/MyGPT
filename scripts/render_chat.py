@@ -11,8 +11,8 @@ content is encoded with ``parse_special=False`` and the role markers are appende
 as ids, so a user who types ``<|end_message|>`` cannot forge template structure.
 
 Usage:
-    python3 scripts/render_chat.py --tokenizer tokenizer_candidates/stage2.1-code \
-        --system "You are MyGPT." --user "Explain RoPE in one sentence."
+    python3 scripts/render_chat.py --system "You are MyGPT." \
+        --user "Explain RoPE in one sentence."
 """
 
 from __future__ import annotations
@@ -67,7 +67,7 @@ def encode_chat(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--tokenizer", default="tokenizer_candidates/stage2.1-code")
+    parser.add_argument("--tokenizer", default="tokenizer")
     parser.add_argument("--system", default=None)
     parser.add_argument("--user", required=True)
     parser.add_argument("--json", action="store_true", help="print the rendered prompt and ids as JSON")

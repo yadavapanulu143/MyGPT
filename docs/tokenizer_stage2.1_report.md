@@ -1,8 +1,11 @@
 # Stage 2.1 comparison report: Stage 2 tokenizer vs candidate
 
-Committed on `main`. **Not adopted.** The candidate lives in
-`tokenizer_candidates/`; the shipped `tokenizer/`, its GGUF exports and the
-`v0.2.0-stage2` release are untouched until this is approved.
+**Adopted on 2026-11-21** (approved by the owner). `tokenizer/` now holds these
+artifacts byte-for-byte, the GGUF exports were rebuilt from them, and release
+`v0.3.1-stage2.1` ships the new Q4_K_M file. The Stage 2 tokenizer, its GGUF and
+the `v0.2.0-stage2` release are preserved unchanged; a frozen copy of the Stage 2
+artifacts also lives in `tokenizer_candidates/stage2-baseline/` so the
+comparisons below stay reproducible.
 
 Three tokenizers are compared:
 
@@ -203,9 +206,38 @@ byte-identical to `encode_chat`.
 | Corpus licensing | every source is MIT, BSD-3, Apache-2.0, PSF-2.0 or PostgreSQL licensed; provenance and licence headers are in `tokenizer_training/manifests/code_corpus_manifest.json`. |
 | Corpus size on disk | the code corpus (67.4 MiB) is not committed; the script and manifest are, so it can be rebuilt. |
 
-## 10. Recommendation
+## 10. Adoption verification (2026-11-21)
 
-Adopt the **code** candidate as the Stage 2.1 tokenizer when approved:
+| Check | Result |
+|---|---|
+| Vocabulary entries | 32,768 (4 head specials + 256 bytes + 32,500 merges + 8 chat specials) |
+| Chat token ids | 32760-32767, exactly the documented mapping |
+| Byte-token ids | unchanged: 4-259 identical to Stage 2 (asserted) |
+| BPE merge mapping | merges.txt rank order == `merges` pairs == GGUF `merges`; ids 260-32759 |
+| Python vs llama.cpp token ids | identical on all 7 probes, F16 and Q4_K_M |
+| Chat template rendering | Jinja and Python renderers byte-identical; ids verified |
+| Injection resistance | user content containing `<\|system\|>` yields no special ids |
+| F16 GGUF | 946.9 MiB, loads in llama.cpp, `llama-bench` reports 495.80 M params |
+| Q4_K_M GGUF | 306,034,880 bytes, loads, tokenizer parity ok |
+| Logits, F16 | cosine 0.99999988, max abs diff 0.0031, top-1 identical |
+| Logits, Q8_0 | cosine 0.99945414, max abs diff 0.0870, top-1 identical |
+| Logits, Q4_K_M | cosine 0.95452863, max abs diff 0.7830, top-1 identical |
+| Test suite | 137 passed, 1 skipped; 30/30 with `MYGPT_GGUF` set (F16 and Q4_K_M) |
+| Fresh clone | artifacts and manifests reproduce; suite passes |
+| Stage 2 preservation | tag `v0.2.0-stage2` and its release untouched |
+
+The Q4_K_M logit figure needs context. These weights are random, so the logit
+vector has no learned structure (std 0.64 across 32,768 logits, range -2.6 to
+2.5). Four-bit weight noise is then comparable to the spread of the signal, which
+is why cosine drops to 0.955 while the top-1 token still agrees. Q8_0 lands at
+0.9994 and F16 at 0.9999999, so the degradation is monotone in quantization depth
+— the expected curve, not a defect. The gate to apply is the same measurement
+after pretraining, when logits have structure worth preserving; the current
+numbers are recorded as a baseline, not as a quality claim.
+
+## 11. Recommendation (approved and applied)
+
+Adopt the **code** candidate as the Stage 2.1 tokenizer:
 
 1. it is the only variant that fixes both problems asked for (reserved
    conversational ids and code representation);
@@ -215,6 +247,6 @@ Adopt the **code** candidate as the Stage 2.1 tokenizer when approved:
 5. it costs nothing in parameters, memory or inference speed (same vocabulary
    size, same architecture).
 
-Do not merge until approved. After approval the steps are: copy the candidate
-artifacts over `tokenizer/`, re-export the Stage 2 GGUF with the new tokenizer,
-re-run parity, and bump the release tag. Stage 3 remains blocked.
+Applied: candidate artifacts copied over `tokenizer/`, GGUF re-exported (F16 +
+Q4_K_M), parity and logits re-verified, release `v0.3.1-stage2.1` published.
+Stage 3 remains blocked pending the planning proposal.

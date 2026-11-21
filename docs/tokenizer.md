@@ -1,13 +1,17 @@
 # MyGPT tokenizer — design, corpus and training
 
-> **Stage 2.1 candidate (committed, not adopted):**
-> the same 32,768 ids with eight conversational specials reserved at the top and a
-> code-enriched corpus. See `docs/tokenizer_stage2.1_report.md`,
-> `docs/tokenizer_special_tokens.md` and `docs/chat_template.md`. The document
-> below describes the shipped Stage 2 tokenizer.
+> **Stage 2.1 adopted (2026-11-21).** The shipped tokenizer keeps 32,768 ids and
+> adds eight conversational specials at the top (32,760-32,767), plus a
+> code-enriched corpus; merges drop from 32,508 to 32,500 and English compression
+> is unchanged (4.012 vs 4.016 bytes/token). See
+> `docs/tokenizer_stage2.1_report.md`, `docs/tokenizer_special_tokens.md` and
+> `docs/chat_template.md`. Sections below describing the Stage 2 build are kept
+> for history; the id layout and counts in this document reflect the adopted
+> tokenizer.
 
-Stage 2 replaces the 260-entry placeholder vocabulary from Stage 1 with a trained
-32,768-entry byte-level BPE tokenizer. The model architecture, parameter count
+Stage 2 replaced the 260-entry placeholder vocabulary from Stage 1 with a trained
+32,768-entry byte-level BPE tokenizer; Stage 2.1 kept that vocabulary size and
+reserved the top eight ids for chat markers. The model architecture, parameter count
 (495,799,296) and embedding matrix (32,768 × 1024) are unchanged: only the
 meaning of the ids changed.
 
@@ -33,7 +37,8 @@ end-to-end against llama.cpp (§6).
 |---|---|---|
 | 0–3 | `<pad>`, `<bos>`, `<eos>`, `<unk>` | 4 |
 | 4–259 | raw bytes 0x00–0xFF | 256 |
-| 260–32767 | BPE merges, in rank order | 32,508 |
+| 260–32759 | BPE merges, in rank order | 32,500 |
+| 32760–32767 | conversational specials (see `docs/tokenizer_special_tokens.md`) | 8 |
 | **total** | | **32,768** |
 
 Special tokens (also recorded in `tokenizer/special_tokens_map.json` and

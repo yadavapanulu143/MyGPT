@@ -61,12 +61,13 @@ on purpose.
 ## Commands that matter
 
 ```bash
-python3 -m pytest tests -q                       # 97 passed, 1 skipped, ~29 s
+python3 -m pytest tests -q                       # 137 passed, 1 skipped, ~30 s
 python3 scripts/count_parameters.py              # 495,799,296 everywhere
 python3 initialization/initialize_weights.py --out checkpoints/mygpt-0.5b-init
 python3 tools/export_gguf.py --checkpoint checkpoints/mygpt-0.5b-init --output dist/mygpt-0.5b-f16.gguf
 llama-quantize dist/mygpt-0.5b-f16.gguf dist/mygpt-0.5b-q4_k_m.gguf Q4_K_M
 python3 scripts/verify_gguf_parity.py --gguf dist/mygpt-0.5b-f16.gguf
+python3 scripts/verify_gguf_logits.py --gguf dist/mygpt-0.5b-f16.gguf --quant f16
 python3 scripts/benchmark_memory.py --contexts 64,256 --dtypes float32,bfloat16
 
 # tokenizer stage (needs requirements-tokenizer.txt and a corpus)
@@ -122,27 +123,28 @@ export bugs found on the way: merges written as ids, and missing RoPE
 permutation. Laptop generation measured by the owner: 25.26-26.93 tokens/s
 (Q4_K_M, `llama-bench`).
 
-Stage 2.1 candidate (committed, NOT adopted): eight
+Stage 2.1 adopted (2026-11-21, release `v0.3.1-stage2.1`): eight
 conversational specials reserved at ids 32,760-32,767 (vocabulary stays 32,768,
 merges drop to 32,500, ids 0-32,759 stay byte-identical to Stage 2), a
 ChatML-like chat template in `config.json` and GGUF, and a 42.1 MiB
 permissively-licensed code corpus added to training. Code tokens -13.3%, Java
 identifiers -40%, English cost +0.08%. llama.cpp token-id parity exact on F16 and
-Q4_K_M, logit cosine 0.99999988. 126 tests pass, 1 skipped.
+Q4_K_M (F16 logit cosine 0.99999988, Q8_0 0.99945, Q4_K_M 0.9545 on random
+weights). 137 tests pass, 1 skipped. Stage 2 artifacts frozen in
+`tokenizer_candidates/stage2-baseline/`; release `v0.2.0-stage2` untouched.
 
 Not done (needs approval): pretraining, instruction tuning, behaviour tuning,
-long-context extension, multilingual tokenizer, merging the Stage 2.1 candidate.
+long-context extension, multilingual tokenizer.
 
 ## Next steps, in order
 
-1. Approve training scope (corpus, GPU budget, evaluation thresholds).
-2. Decide on the Stage 2.1 candidate: merge it (copy
-   `tokenizer_candidates/stage2.1-code/*` over `tokenizer/`, re-export, re-run
-   parity, tag) or keep the Stage 2 tokenizer and drop the chat template.
-3. Pretrain 10-20B tokens on rented GPUs; monitor validation loss.
-4. Instruction-tune, then behaviour-tune (DPO/ORPO against over-refusal).
-5. Evaluate: perplexity, lm-eval-harness, XSTest over-refusal, safety floor.
-6. Re-export GGUF, re-quantize, benchmark on the actual laptop with `llama-bench`.
+1. Approve the Stage 3 plan (`docs/stage3_plan.md`): corpus, GPU budget, evaluation
+   thresholds. Nothing trains before that approval.
+2. Pretrain on rented GPUs; monitor validation loss against the plan's gates.
+3. Instruction-tune, then behaviour-tune (DPO/ORPO against over-refusal).
+4. Evaluate: perplexity, lm-eval-harness, XSTest over-refusal, safety floor.
+5. Re-export GGUF, re-quantize, benchmark on the actual laptop with `llama-bench`,
+   and re-run the logit gates now that weights are trained.
 
 ## Files that must be pushed for persistence
 

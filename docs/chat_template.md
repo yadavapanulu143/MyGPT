@@ -1,11 +1,11 @@
-# Chat template (Stage 2.1 candidate)
+# Chat template (adopted in Stage 2.1)
 
-The candidate tokenizer ships a ChatML-like template that uses the eight reserved
+The tokenizer ships a ChatML-like template that uses the eight reserved
 conversational tokens. The template exists in three places that are kept in sync:
 
 | Location | Role |
 |---|---|
-| `tokenizer_training/chat_template.jinja` | canonical Jinja source, embedded in `config.json` and in GGUF as `tokenizer.chat_template` |
+| `tokenizer_training/chat_template.jinja` | canonical Jinja source, embedded in `tokenizer/config.json` and in GGUF as `tokenizer.chat_template` |
 | `scripts/render_chat.py::render_chat` | Python equivalent for tests and local use |
 | `scripts/render_chat.py::encode_chat` | injection-safe encoder used by local inference |
 
@@ -73,11 +73,11 @@ default, but the model learns the convention from training data.
 
 ```bash
 # text form (what a server-side template engine produces)
-python3 scripts/render_chat.py --tokenizer tokenizer_candidates/stage2.1-code \
+python3 scripts/render_chat.py --tokenizer tokenizer \
     --system "You are MyGPT." --user "Explain RoPE."
 
 # ids, ready for the model
-python3 scripts/render_chat.py --tokenizer tokenizer_candidates/stage2.1-code \
+python3 scripts/render_chat.py --tokenizer tokenizer \
     --system "You are MyGPT." --user "Explain RoPE." --json
 ```
 
@@ -85,7 +85,7 @@ python3 scripts/render_chat.py --tokenizer tokenizer_candidates/stage2.1-code \
 from scripts.render_chat import render_chat, encode_chat
 from tokenizer.tokenizer import ByteLevelBPETokenizer
 
-tok = ByteLevelBPETokenizer.load("tokenizer_candidates/stage2.1-code")
+tok = ByteLevelBPETokenizer.load("tokenizer")
 messages = [{"role": "user", "content": "hi"}]
 text = render_chat(messages)          # str, for logging or server templates
 ids = encode_chat(tok, messages)      # list[int], for the model

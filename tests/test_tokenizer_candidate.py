@@ -1,9 +1,12 @@
-"""Stage 2.1 candidate tokenizers: reserved conversational tokens + code corpus.
+"""Stage 2.1 tokenizers: reserved conversational tokens + code corpus.
 
-These tests pin the properties the candidate relies on. The most important one is
-that adding eight specials only rewrites the top eight ids: every byte id and
-every merge id below them must stay byte-identical to Stage 2, so the Stage 2
-checkpoint's embedding rows remain valid.
+``tokenizer/`` is the adopted Stage 2.1 tokenizer. ``tokenizer_candidates/`` keeps
+the ablation variant (specials only) and a frozen copy of the Stage 2 artifacts so
+the historical comparison stays reproducible.
+
+The property that matters most: adding eight specials only rewrites the top eight
+ids. Every byte id and every merge id below them is byte-identical to Stage 2, so
+the Stage 2 checkpoint's embedding rows remain valid.
 """
 
 from __future__ import annotations
@@ -17,7 +20,8 @@ import pytest
 from tokenizer.tokenizer import BYTE_OFFSET, NUM_BYTES, ByteLevelBPETokenizer
 
 ROOT = Path(__file__).resolve().parents[1]
-STAGE2 = ROOT / "tokenizer"
+ADOPTED = ROOT / "tokenizer"
+STAGE2 = ROOT / "tokenizer_candidates" / "stage2-baseline"
 SPECIALS_ONLY = ROOT / "tokenizer_candidates" / "stage2.1-specials"
 CANDIDATE = ROOT / "tokenizer_candidates" / "stage2.1-code"
 
@@ -33,7 +37,7 @@ CONVERSATIONAL = [
 ]
 
 candidates = pytest.mark.parametrize(
-    "directory", [SPECIALS_ONLY, CANDIDATE], ids=["specials-only", "code-enriched"]
+    "directory", [SPECIALS_ONLY, CANDIDATE, ADOPTED], ids=["specials-only", "code-enriched", "adopted"]
 )
 
 
@@ -152,6 +156,20 @@ def test_training_metadata_records_corpus(directory: Path) -> None:
     assert "highest ids conversational specials" in config["special_token_layout"]
 
 
+def test_adopted_tokenizer_matches_the_candidate() -> None:
+    """Adoption must be a byte-for-byte copy, not a re-derivation."""
+    for name in ("config.json", "vocab.json", "merges.txt", "special_tokens_map.json"):
+        assert (ADOPTED / name).read_bytes() == (CANDIDATE / name).read_bytes(), name
+
+
+def test_stage2_baseline_is_intact() -> None:
+    stage2 = load(STAGE2)
+    assert stage2.vocab_size == 32768
+    assert len(stage2.merges) == 32508
+    assert len(stage2.special_tokens) == 4
+    assert stage2.chat_template is None
+
+
 def test_code_candidate_improves_code_compression() -> None:
     stage2 = load(STAGE2)
     candidate = load(CANDIDATE)
@@ -179,8 +197,8 @@ def test_code_candidate_keeps_english_cost_bounded() -> None:
     assert abs(after - before) / before < 0.02, f"english cost {before} -> {after} exceeds 2%"
 
 
-def test_code_candidate_ships_chat_template() -> None:
-    candidate = load(CANDIDATE)
+def test_adopted_tokenizer_ships_chat_template() -> None:
+    candidate = load(ADOPTED)
     assert candidate.chat_template is not None
     assert "<|assistant|>" in candidate.chat_template
     assert load(SPECIALS_ONLY).chat_template is None

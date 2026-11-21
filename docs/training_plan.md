@@ -11,7 +11,7 @@ made on facts rather than optimism.
 |---|---|---|
 | Architecture + random init | done | none: logits are essentially arbitrary |
 | Tokenizer foundation | done | lossless byte-level encoding |
-| Tokenizer training | **done (stage 2)** | 32,768 ids, 32,508 merges, 4.650 bytes/token held-out; see `docs/tokenizer_report.md` |
+| Tokenizer training | **done (stage 2, revised in stage 2.1)** | 32,768 ids, 32,500 merges, 8 chat specials, 4.012 bytes/token English + 3.53 code held-out; see `docs/tokenizer_stage2.1_report.md` |
 | Pretraining | not started | needs a GPU cluster or rented GPUs |
 | Instruction tuning | not started | needs pretraining first |
 | Behaviour tuning | not started | needs instruction tuning first |
