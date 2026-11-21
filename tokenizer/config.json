@@ -1,0 +1,17 @@
+{
+  "tokenizer_class": "ByteLevelBPETokenizer",
+  "description": "Independent byte-level BPE foundation for English. Merges are empty until the tokenizer training stage.",
+  "vocab_size": 32768,
+  "current_vocab_size": 260,
+  "special_tokens": {
+    "<pad>": 0,
+    "<bos>": 1,
+    "<eos>": 2,
+    "<unk>": 3
+  },
+  "byte_offset": 4,
+  "num_byte_tokens": 256,
+  "pre_tokenizer": "gpt2",
+  "byte_level": true,
+  "merges": []
+}
