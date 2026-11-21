@@ -1,9 +1,11 @@
 # Final report: independent 0.5B-parameter LLM
 
-Stage 2 deliverable: architecture, **trained 32,768-entry tokenizer**, random
-initialization, structural verification, memory/performance analysis, quantized
-GGUF deployment path, laptop instructions and measured laptop benchmarks. No
-language-model training has been performed.
+Stage 2.1 deliverable: architecture, **trained 32,768-entry tokenizer with eight
+conversational specials and a code-enriched corpus**, random initialization,
+structural verification, memory/performance analysis, quantized GGUF deployment
+path, laptop instructions and measured laptop benchmarks. No language-model
+training has been performed: the weights are random, so the model cannot hold a
+conversation yet.
 
 Date: 2026-11-21
 Model: MyGPT 0.5B (`mygpt-0.5b`)
@@ -138,7 +140,7 @@ model and perplexity/benchmark scores.
 
 ## 7. Test results
 
-`python3 -m pytest tests -q` → **97 passed, 1 skipped** (28.8 s). The skipped
+`python3 -m pytest tests -q` → **137 passed, 1 skipped** (29.4 s). The skipped
 test is the llama.cpp tokenizer-parity check, which needs a built harness; with
 `MYGPT_GGUF=dist/mygpt-0.5b-f16.gguf` it runs and passes (30/30 in that file).
 
@@ -254,11 +256,15 @@ MyGPT/
 │   └── policy.py                    behaviour policy loader
 ├── tokenizer/
 │   ├── tokenizer.py                 byte-level BPE runtime (encode/decode/GGUF view)
-│   ├── config.json                  trained vocabulary + 32,508 merges
+│   ├── config.json                  trained vocabulary + 32,500 merges + chat template
 │   ├── vocab.json                   GPT-2-compatible token -> id map
 │   ├── merges.txt                   GPT-2-compatible merge list
 │   ├── special_tokens_map.json      reserved ids
-│   └── tokenizer_manifest.json      artifact hashes + corpus hash
+│   └── tokenizer_manifest.json      artifact hashes + corpus hash (label stage2.1-adopted)
+├── tokenizer_candidates/
+│   ├── stage2-baseline/             frozen Stage 2 artifacts (historical comparison)
+│   ├── stage2.1-specials/           ablation: specials without the code corpus
+│   └── stage2.1-code/               adopted candidate (source of tokenizer/)
 ├── tokenizer_training/
 │   ├── prepare_corpus.py            5-source corpus builder (dedupe, filter, split)
 │   ├── train_tokenizer.py           HF BpeTrainer -> this project's format

@@ -36,7 +36,7 @@ pip install -r requirements.txt
 # 1. architecture + exact parameter count
 python3 scripts/count_parameters.py
 
-# 2. run the verification suite (97 tests, 1 skipped without llama.cpp)
+# 2. run the verification suite (137 tests, 1 skipped without llama.cpp)
 python3 -m pytest tests -q
 
 # 3. create the randomly initialized checkpoint (1.85 GiB, fp32)
@@ -113,6 +113,10 @@ first token.
 | `docs/tokenizer.md` | tokenizer design, corpus, licences, training, reproduction |
 | `docs/tokenizer_report.md` | tokenizer evaluation: compression, probes, HF/llama.cpp parity |
 | `docs/training_plan.md` | data, compute, cost and evaluation plan for the training stage |
+| `docs/stage3_plan.md` | **current** Stage 3 proposal: corpora and licensing, mixture, GPU budget, optimiser, checkpointing, refusal evaluation. Not approved, nothing trained |
+| `docs/tokenizer_stage2.1_report.md` | adopted tokenizer: specials, code corpus, before/after measurements, adoption verification |
+| `docs/tokenizer_special_tokens.md` | every reserved id, why the set is sufficient, conflict review |
+| `docs/chat_template.md` | chat wire format, injection safety, llama.cpp usage |
 | `deployment/README.md` | Windows 11 quick start |
 | `deployment/deployment_plan.md` | runtime choice, artifact pipeline, transfer, offline checks |
 | `AGENTS.md` | project memory: decisions, status, next steps |
